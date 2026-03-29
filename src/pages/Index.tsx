@@ -1,16 +1,26 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import InterventionForm from "@/components/InterventionForm";
+import logo from "@/assets/logo.png";
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="emergency-header text-primary-foreground py-4 px-4 shadow-lg sticky top-0 z-50">
+        <div className="max-w-xl mx-auto flex items-center gap-3">
+          <img src={logo} alt="Logo Ambulance" width={48} height={48} className="rounded-lg bg-primary-foreground/20 p-1" />
+          <div>
+            <h1 className="text-lg font-bold leading-tight">Fiche d'Intervention</h1>
+            <p className="text-xs opacity-80">Service Ambulancier</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Form */}
+      <main className="max-w-xl mx-auto px-4 py-5 pb-20">
+        <InterventionForm />
+      </main>
     </div>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
