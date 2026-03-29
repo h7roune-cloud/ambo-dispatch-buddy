@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2 } from "lucide-react";
+import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 const VICTIMES_EN_DANGER = [
   "Crise cardiaque",
