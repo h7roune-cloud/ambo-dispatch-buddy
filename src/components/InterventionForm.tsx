@@ -8,27 +8,41 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-const ACCIDENT_TYPES = [
-  "Accident de circulation - Collision entre deux véhicules",
-  "Accident de circulation - Carambolage",
-  "Accident de circulation - Heurt de piéton",
-  "Accident de circulation - Renversement",
-  "Accident de circulation - Sortie de route",
-  "Accident de circulation - Accident de moto/vélo",
-  "Victime en danger - Crise cardiaque",
-  "Victime en danger - Crise d'épilepsie",
-  "Victime en danger - Crise d'asthme",
-  "Victime en danger - Blessé bagarre",
-  "Victime en danger - Blessé chute",
-  "Victime en danger - Malaise",
-  "Victime en danger - Noyade",
-  "Victime en danger - Brûlure",
-  "Victime en danger - Électrocution",
-  "Victime en danger - Intoxication",
-  "Victime en danger - Tentative de suicide",
-  "Victime en danger - Accouchement",
-  "Incendie",
-  "Catastrophe naturelle",
+const VICTIMES_EN_DANGER = [
+  "Crise cardiaque",
+  "Crise d'épilepsie",
+  "Crise d'asthme",
+  "Crise de panique",
+  "Crise diabétique",
+  "Blessé bagarre",
+  "Blessé chute",
+  "Malaise",
+  "Noyade",
+  "Brûlure",
+  "Électrocution",
+  "Intoxication",
+  "Tentative de suicide",
+  "Accouchement",
+  "Étouffement",
+  "Hémorragie",
+  "Morsure de serpent / animal",
+  "Allergie grave",
+  "Autre",
+];
+
+const ACCIDENTS_CIRCULATION = [
+  "Collision entre deux véhicules",
+  "Carambolage",
+  "Heurt de piéton",
+  "Renversement",
+  "Sortie de route",
+  "Accident de moto",
+  "Accident de vélo",
+  "Accident de camion / poids lourd",
+  "Accident de bus / transport en commun",
+  "Collision frontale",
+  "Collision latérale",
+  "Tonneau",
   "Autre",
 ];
 
@@ -50,7 +64,8 @@ const InterventionForm = () => {
   );
   const [compteur, setCompteur] = useState("");
   const [lieuAccident, setLieuAccident] = useState("");
-  const [natureAccident, setNatureAccident] = useState("");
+  const [typeVictime, setTypeVictime] = useState("");
+  const [typeAccident, setTypeAccident] = useState("");
   const [nombreVictimes, setNombreVictimes] = useState("1");
   const [victimes, setVictimes] = useState<Victime[]>([
     { id: 1, nom: "", prenom: "", age: "", etat: "léger", carteIdentite: null },
