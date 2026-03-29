@@ -445,13 +445,13 @@ const InterventionForm = () => {
 
       {/* Actions */}
       <div className="flex gap-3 pt-2">
-        <Button onClick={shareViaWhatsApp} className="flex-1 gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-primary-foreground font-semibold">
+        <Button onClick={shareViaWhatsApp} className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground font-semibold">
           <MessageCircle className="w-4 h-4" />
           WhatsApp
         </Button>
-        <Button onClick={shareNative} variant="outline" className="flex-1 gap-2 font-semibold border-primary text-primary hover:bg-accent">
-          <Share2 className="w-4 h-4" />
-          Partager
+        <Button onClick={sharePDF} variant="outline" className="flex-1 gap-2 font-semibold border-primary text-primary hover:bg-accent">
+          <FileText className="w-4 h-4" />
+          PDF
         </Button>
       </div>
     </div>
