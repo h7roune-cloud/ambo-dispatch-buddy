@@ -109,13 +109,15 @@ const InterventionForm = () => {
   };
 
   const buildReport = () => {
-    let report = `🚑 *FICHE D'INTERVENTION AMBULANCE*\n`;
+    let report = `🚑 *PROTECTION CIVILE NOUACEUR*\n`;
     report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
     report += `📅 Date: ${dateIntervention}\n`;
     report += `🕐 Heure d'arrivée: ${heureArrivee}\n`;
     report += `🔢 Compteur: ${compteur} km\n`;
     report += `📍 Lieu: ${lieuAccident}\n\n`;
-    report += `⚠️ *Nature de l'accident:*\n${natureAccident}\n\n`;
+    if (typeVictime) report += `🚨 *Victime en danger:* ${typeVictime}\n`;
+    if (typeAccident) report += `🚗 *Accident de circulation:* ${typeAccident}\n`;
+    report += `\n`;
     report += `👥 Nombre de victimes: ${nombreVictimes}\n\n`;
 
     victimes.forEach((v, i) => {
@@ -218,21 +220,37 @@ const InterventionForm = () => {
         </div>
       </div>
 
-      {/* Nature de l'accident */}
+      {/* Victime en danger */}
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <Shield className="w-4 h-4" />
-          Nature de l'intervention
+          Victime en danger
         </div>
-        <Select value={natureAccident} onValueChange={setNatureAccident}>
+        <Select value={typeVictime} onValueChange={setTypeVictime}>
           <SelectTrigger>
             <SelectValue placeholder="Sélectionner le type" />
           </SelectTrigger>
           <SelectContent>
-            {ACCIDENT_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
+            {VICTIMES_EN_DANGER.map((type) => (
+              <SelectItem key={type} value={type}>{type}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Accident de circulation */}
+      <div className="field-group space-y-3">
+        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+          <Shield className="w-4 h-4" />
+          Accident de circulation
+        </div>
+        <Select value={typeAccident} onValueChange={setTypeAccident}>
+          <SelectTrigger>
+            <SelectValue placeholder="Sélectionner le type" />
+          </SelectTrigger>
+          <SelectContent>
+            {ACCIDENTS_CIRCULATION.map((type) => (
+              <SelectItem key={type} value={type}>{type}</SelectItem>
             ))}
           </SelectContent>
         </Select>
