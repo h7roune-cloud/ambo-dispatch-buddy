@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2 } from "lucide-react";
+import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 const VICTIMES_EN_DANGER = [
   "Crise cardiaque",
@@ -138,49 +139,114 @@ const InterventionForm = () => {
     return report;
   };
 
-  const shareViaWhatsApp = () => {
+  const generatePDF = async (): Promise<Blob> => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    const addLine = (text: string, size = 10, bold = false) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFontSize(size);
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      const lines = doc.splitTextToSize(text, pageWidth - 30);
+      doc.text(lines, 15, y);
+      y += lines.length * (size * 0.5) + 2;
+    };
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROTECTION CIVILE NOUACEUR", pageWidth / 2, y, { align: "center" });
+    y += 8;
+    doc.setFontSize(12);
+    doc.text("Fiche d'Intervention", pageWidth / 2, y, { align: "center" });
+    y += 4;
+    doc.setLineWidth(0.5);
+    doc.line(15, y, pageWidth - 15, y);
+    y += 8;
+
+    addLine(`Date: ${dateIntervention}`, 11);
+    addLine(`Heure d'arrivee: ${heureArrivee}`, 11);
+    addLine(`Compteur: ${compteur} km`, 11);
+    addLine(`Lieu: ${lieuAccident}`, 11);
+    y += 4;
+
+    if (typeVictime) addLine(`Victime en danger: ${typeVictime}`, 11, true);
+    if (typeAccident) addLine(`Accident de circulation: ${typeAccident}`, 11, true);
+    y += 4;
+
+    addLine(`Nombre de victimes: ${nombreVictimes}`, 11);
+    y += 2;
+
+    for (let i = 0; i < victimes.length; i++) {
+      const v = victimes[i];
+      if (y > 240) { doc.addPage(); y = 20; }
+      addLine(`--- Victime ${i + 1} ---`, 11, true);
+      addLine(`  Nom: ${v.nom} ${v.prenom}`, 10);
+      addLine(`  Age: ${v.age}`, 10);
+      addLine(`  Etat: ${v.etat === "grave" ? "GRAVE" : "Leger"}`, 10);
+
+      if (v.carteIdentite) {
+        try {
+          if (y > 200) { doc.addPage(); y = 20; }
+          doc.addImage(v.carteIdentite, "JPEG", 15, y, 60, 40);
+          y += 44;
+        } catch { /* skip */ }
+      }
+      y += 4;
+    }
+
+    addLine(`Hopital: ${hopital}`, 11);
+    addLine(`Police: ${policePresente ? "Presente" : "Absente"}`, 11);
+    addLine(`Gendarmerie: ${gendarmeriePresente ? "Presente" : "Absente"}`, 11);
+
+    if (observations) {
+      y += 4;
+      addLine("Observations:", 11, true);
+      addLine(observations, 10);
+    }
+
+    // Footer
+    y += 10;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.text("Cree par Ayoub Sadkouni", pageWidth / 2, 285, { align: "center" });
+
+    return doc.output("blob");
+  };
+
+  const shareViaWhatsApp = async () => {
     const report = buildReport();
     const encoded = encodeURIComponent(report);
     window.open(`https://wa.me/?text=${encoded}`, "_blank");
     toast.success("Ouverture de WhatsApp...");
   };
 
-  const shareNative = async () => {
-    const report = buildReport();
+  const sharePDF = async () => {
+    try {
+      const blob = await generatePDF();
+      const file = new File([blob], `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
 
-    // Collect images to share
-    const files: File[] = [];
-    for (const v of victimes) {
-      if (v.carteIdentite) {
-        try {
-          const res = await fetch(v.carteIdentite);
-          const blob = await res.blob();
-          files.push(new File([blob], `carte_identite_${v.nom || v.id}.jpg`, { type: blob.type }));
-        } catch {
-          // skip
-        }
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: "Fiche d'Intervention",
+          files: [file],
+        });
+        toast.success("Rapport PDF partagé avec succès");
+      } else {
+        // Fallback: download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success("PDF téléchargé");
       }
-    }
-
-    if (navigator.share) {
-      try {
-        const shareData: ShareData = {
-          title: "Fiche d'Intervention Ambulance",
-          text: report,
-        };
-        if (files.length > 0 && navigator.canShare?.({ files })) {
-          shareData.files = files;
-        }
-        await navigator.share(shareData);
-        toast.success("Rapport partagé avec succès");
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
-          toast.error("Erreur lors du partage");
-        }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        toast.error("Erreur lors de la création du PDF");
       }
-    } else {
-      await navigator.clipboard.writeText(report);
-      toast.success("Rapport copié dans le presse-papier");
     }
   };
 
@@ -379,13 +445,13 @@ const InterventionForm = () => {
 
       {/* Actions */}
       <div className="flex gap-3 pt-2">
-        <Button onClick={shareViaWhatsApp} className="flex-1 gap-2 bg-[hsl(142,70%,40%)] hover:bg-[hsl(142,70%,35%)] text-primary-foreground font-semibold">
+        <Button onClick={shareViaWhatsApp} className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground font-semibold">
           <MessageCircle className="w-4 h-4" />
           WhatsApp
         </Button>
-        <Button onClick={shareNative} variant="outline" className="flex-1 gap-2 font-semibold border-primary text-primary hover:bg-accent">
-          <Share2 className="w-4 h-4" />
-          Partager
+        <Button onClick={sharePDF} variant="outline" className="flex-1 gap-2 font-semibold border-primary text-primary hover:bg-accent">
+          <FileText className="w-4 h-4" />
+          PDF
         </Button>
       </div>
     </div>
