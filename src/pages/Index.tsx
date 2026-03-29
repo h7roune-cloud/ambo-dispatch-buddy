@@ -19,6 +19,10 @@ const Index = () => {
       <main className="max-w-xl mx-auto px-4 py-5 pb-20">
         <InterventionForm />
       </main>
+
+      <footer className="text-center text-xs text-muted-foreground py-4 opacity-60">
+        Créé par Ayoub Sadkouni
+      </footer>
     </div>
   );
 };
