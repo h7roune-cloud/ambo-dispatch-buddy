@@ -281,6 +281,40 @@ const InterventionForm = () => {
       addLine(observations, 10);
     }
 
+    // Photos d'intervention
+    if (photosIntervention.length > 0) {
+      y += 4;
+      addLine("Photos de l'intervention:", 11, true);
+      for (const photo of photosIntervention) {
+        try {
+          const { width, height } = await getImageDimensions(photo.dataUrl);
+          const maxWidth = pageWidth - 30;
+          const maxHeight = 100;
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          const renderWidth = Math.max(40, width * ratio);
+          const renderHeight = Math.max(28, height * ratio);
+          const imageFormat = getPdfImageFormat(photo.dataUrl);
+
+          if (y + renderHeight > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.addImage(
+            photo.dataUrl,
+            imageFormat,
+            15,
+            y,
+            renderWidth,
+            renderHeight,
+            undefined,
+            imageFormat === "JPEG" ? "MEDIUM" : undefined
+          );
+          y += renderHeight + 4;
+        } catch { /* skip */ }
+      }
+    }
+
     // Footer
     y += 10;
     doc.setFontSize(8);
