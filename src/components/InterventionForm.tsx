@@ -56,6 +56,8 @@ interface Victime {
   carteIdentite: string | null;
 }
 
+type PdfImageFormat = "JPEG" | "PNG" | "WEBP";
+
 const InterventionForm = () => {
   const [heureArrivee, setHeureArrivee] = useState(
     new Date().toTimeString().slice(0, 5)
@@ -139,13 +141,35 @@ const InterventionForm = () => {
     return report;
   };
 
+  const getPdfImageFormat = (dataUrl: string): PdfImageFormat => {
+    const mimeType = dataUrl.match(/^data:image\/(png|jpe?g|webp)/i)?.[1]?.toLowerCase();
+
+    if (mimeType === "png") return "PNG";
+    if (mimeType === "webp") return "WEBP";
+    return "JPEG";
+  };
+
+  const getImageDimensions = (dataUrl: string) =>
+    new Promise<{ width: number; height: number }>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        resolve({
+          width: image.naturalWidth || image.width,
+          height: image.naturalHeight || image.height,
+        });
+      };
+      image.onerror = () => reject(new Error("Image load failed"));
+      image.src = dataUrl;
+    });
+
   const generatePDF = async (): Promise<Blob> => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
 
     const addLine = (text: string, size = 10, bold = false) => {
-      if (y > 270) { doc.addPage(); y = 20; }
+      if (y > pageHeight - 20) { doc.addPage(); y = 20; }
       doc.setFontSize(size);
       doc.setFont("helvetica", bold ? "bold" : "normal");
       const lines = doc.splitTextToSize(text, pageWidth - 30);
@@ -180,7 +204,7 @@ const InterventionForm = () => {
 
     for (let i = 0; i < victimes.length; i++) {
       const v = victimes[i];
-      if (y > 240) { doc.addPage(); y = 20; }
+      if (y > pageHeight - 55) { doc.addPage(); y = 20; }
       addLine(`--- Victime ${i + 1} ---`, 11, true);
       addLine(`  Nom: ${v.nom} ${v.prenom}`, 10);
       addLine(`  Age: ${v.age}`, 10);
@@ -188,9 +212,32 @@ const InterventionForm = () => {
 
       if (v.carteIdentite) {
         try {
-          if (y > 200) { doc.addPage(); y = 20; }
-          doc.addImage(v.carteIdentite, "JPEG", 15, y, 60, 40);
-          y += 44;
+          addLine("  Carte d'identite:", 10, true);
+
+          const { width, height } = await getImageDimensions(v.carteIdentite);
+          const maxWidth = pageWidth - 30;
+          const maxHeight = 75;
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          const renderWidth = Math.max(40, width * ratio);
+          const renderHeight = Math.max(28, height * ratio);
+          const imageFormat = getPdfImageFormat(v.carteIdentite);
+
+          if (y + renderHeight > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.addImage(
+            v.carteIdentite,
+            imageFormat,
+            15,
+            y,
+            renderWidth,
+            renderHeight,
+            undefined,
+            imageFormat === "JPEG" ? "MEDIUM" : undefined
+          );
+          y += renderHeight + 4;
         } catch { /* skip */ }
       }
       y += 4;
