@@ -56,6 +56,11 @@ interface Victime {
   carteIdentite: string | null;
 }
 
+interface PhotoIntervention {
+  id: number;
+  dataUrl: string;
+}
+
 type PdfImageFormat = "JPEG" | "PNG" | "WEBP";
 
 const InterventionForm = () => {
