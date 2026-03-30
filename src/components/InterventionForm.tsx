@@ -82,7 +82,9 @@ const InterventionForm = () => {
   const [policePresente, setPolicePresente] = useState(false);
   const [gendarmeriePresente, setGendarmeriePresente] = useState(false);
   const [observations, setObservations] = useState("");
+  const [photosIntervention, setPhotosIntervention] = useState<PhotoIntervention[]>([]);
 
+  const photosInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const updateVictime = (id: number, field: keyof Victime, value: string | null) => {
