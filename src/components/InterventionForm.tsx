@@ -574,6 +574,42 @@ const InterventionForm = () => {
         <Textarea placeholder="Notes, détails supplémentaires..." value={observations} onChange={(e) => setObservations(e.target.value)} rows={3} />
       </div>
 
+      {/* Photos d'intervention */}
+      <div className="field-group space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+            <Camera className="w-4 h-4" />
+            Photos de l'intervention
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            ref={photosInputRef}
+            onChange={handlePhotosUpload}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={() => photosInputRef.current?.click()} className="h-8 text-xs gap-1">
+            <Plus className="w-3 h-3" /> Ajouter
+          </Button>
+        </div>
+        {photosIntervention.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {photosIntervention.map((photo) => (
+              <div key={photo.id} className="relative">
+                <img src={photo.dataUrl} alt="Photo intervention" className="w-full h-20 object-cover rounded-lg border border-border" />
+                <button
+                  onClick={() => removePhoto(photo.id)}
+                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Actions */}
       <div className="flex gap-3 pt-2">
         <Button onClick={shareViaWhatsApp} className="flex-1 gap-2 bg-success hover:bg-success/90 text-success-foreground font-semibold">
