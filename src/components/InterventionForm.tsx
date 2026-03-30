@@ -56,6 +56,11 @@ interface Victime {
   carteIdentite: string | null;
 }
 
+interface PhotoIntervention {
+  id: number;
+  dataUrl: string;
+}
+
 type PdfImageFormat = "JPEG" | "PNG" | "WEBP";
 
 const InterventionForm = () => {
@@ -77,7 +82,9 @@ const InterventionForm = () => {
   const [policePresente, setPolicePresente] = useState(false);
   const [gendarmeriePresente, setGendarmeriePresente] = useState(false);
   const [observations, setObservations] = useState("");
+  const [photosIntervention, setPhotosIntervention] = useState<PhotoIntervention[]>([]);
 
+  const photosInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
   const updateVictime = (id: number, field: keyof Victime, value: string | null) => {
@@ -109,6 +116,27 @@ const InterventionForm = () => {
       updateVictime(victimeId, "carteIdentite", reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handlePhotosUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newId = Date.now() + Math.random();
+        setPhotosIntervention((prev) => [
+          ...prev,
+          { id: newId, dataUrl: reader.result as string },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removePhoto = (id: number) => {
+    setPhotosIntervention((prev) => prev.filter((p) => p.id !== id));
   };
 
   const buildReport = () => {
@@ -251,6 +279,40 @@ const InterventionForm = () => {
       y += 4;
       addLine("Observations:", 11, true);
       addLine(observations, 10);
+    }
+
+    // Photos d'intervention
+    if (photosIntervention.length > 0) {
+      y += 4;
+      addLine("Photos de l'intervention:", 11, true);
+      for (const photo of photosIntervention) {
+        try {
+          const { width, height } = await getImageDimensions(photo.dataUrl);
+          const maxWidth = pageWidth - 30;
+          const maxHeight = 100;
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          const renderWidth = Math.max(40, width * ratio);
+          const renderHeight = Math.max(28, height * ratio);
+          const imageFormat = getPdfImageFormat(photo.dataUrl);
+
+          if (y + renderHeight > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+          }
+
+          doc.addImage(
+            photo.dataUrl,
+            imageFormat,
+            15,
+            y,
+            renderWidth,
+            renderHeight,
+            undefined,
+            imageFormat === "JPEG" ? "MEDIUM" : undefined
+          );
+          y += renderHeight + 4;
+        } catch { /* skip */ }
+      }
     }
 
     // Footer
@@ -510,6 +572,42 @@ const InterventionForm = () => {
       <div className="field-group space-y-3">
         <Label className="text-xs text-muted-foreground">Observations complémentaires</Label>
         <Textarea placeholder="Notes, détails supplémentaires..." value={observations} onChange={(e) => setObservations(e.target.value)} rows={3} />
+      </div>
+
+      {/* Photos d'intervention */}
+      <div className="field-group space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+            <Camera className="w-4 h-4" />
+            Photos de l'intervention
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            ref={photosInputRef}
+            onChange={handlePhotosUpload}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={() => photosInputRef.current?.click()} className="h-8 text-xs gap-1">
+            <Plus className="w-3 h-3" /> Ajouter
+          </Button>
+        </div>
+        {photosIntervention.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {photosIntervention.map((photo) => (
+              <div key={photo.id} className="relative">
+                <img src={photo.dataUrl} alt="Photo intervention" className="w-full h-20 object-cover rounded-lg border border-border" />
+                <button
+                  onClick={() => removePhoto(photo.id)}
+                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Actions */}
