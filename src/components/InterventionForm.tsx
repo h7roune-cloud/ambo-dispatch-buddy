@@ -216,10 +216,32 @@ const InterventionForm = () => {
   };
 
   const shareViaWhatsApp = async () => {
-    const report = buildReport();
-    const encoded = encodeURIComponent(report);
-    window.open(`https://wa.me/?text=${encoded}`, "_blank");
-    toast.success("Ouverture de WhatsApp...");
+    try {
+      const blob = await generatePDF();
+      const fileName = `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
+      const file = new File([blob], fileName, { type: "application/pdf" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: "Fiche d'Intervention - Protection Civile Nouaceur",
+          text: buildReport(),
+          files: [file],
+        });
+        toast.success("Rapport partagé avec succès");
+      } else {
+        // Fallback: open WhatsApp with text only
+        const encoded = encodeURIComponent(buildReport());
+        window.open(`https://wa.me/?text=${encoded}`, "_blank");
+        toast.success("Ouverture de WhatsApp...");
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        // Fallback to text-only WhatsApp
+        const encoded = encodeURIComponent(buildReport());
+        window.open(`https://wa.me/?text=${encoded}`, "_blank");
+        toast.success("Ouverture de WhatsApp...");
+      }
+    }
   };
 
   const sharePDF = async () => {
