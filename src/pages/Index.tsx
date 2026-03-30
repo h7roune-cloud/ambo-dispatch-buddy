@@ -1,8 +1,18 @@
+import { useState } from "react";
 import InterventionForm from "@/components/InterventionForm";
 import ThemeToggle from "@/components/ThemeToggle";
+import LoginScreen from "@/components/LoginScreen";
 import logo from "@/assets/logo.png";
 
 const Index = () => {
+  const [authenticated, setAuthenticated] = useState(
+    () => localStorage.getItem("pc_authenticated") === "true"
+  );
+
+  if (!authenticated) {
+    return <LoginScreen onLogin={() => setAuthenticated(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
