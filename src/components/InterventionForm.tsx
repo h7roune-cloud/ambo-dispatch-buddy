@@ -118,6 +118,27 @@ const InterventionForm = () => {
     reader.readAsDataURL(file);
   };
 
+  const handlePhotosUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newId = Date.now() + Math.random();
+        setPhotosIntervention((prev) => [
+          ...prev,
+          { id: newId, dataUrl: reader.result as string },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removePhoto = (id: number) => {
+    setPhotosIntervention((prev) => prev.filter((p) => p.id !== id));
+  };
+
   const buildReport = () => {
     let report = `🚑 *PROTECTION CIVILE NOUACEUR*\n`;
     report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
