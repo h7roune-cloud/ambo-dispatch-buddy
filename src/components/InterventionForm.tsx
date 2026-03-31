@@ -365,6 +365,7 @@ const InterventionForm = () => {
   };
 
   const sharePDF = async () => {
+    if (!validateRequiredFields()) return;
     try {
       const blob = await generatePDF();
       const file = new File([blob], `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
