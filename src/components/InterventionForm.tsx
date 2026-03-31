@@ -556,6 +556,15 @@ const InterventionForm = () => {
         ))}
       </div>
 
+      {/* Numéro d'urgence */}
+      <div className="field-group space-y-3">
+        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+          <Phone className="w-4 h-4" />
+          Numéro d'urgence
+        </div>
+        <Input type="tel" placeholder="Numéro d'urgence" value={numeroUrgence} onChange={(e) => setNumeroUrgence(e.target.value)} />
+      </div>
+
       {/* Hôpital */}
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
