@@ -321,7 +321,21 @@ const InterventionForm = () => {
     return doc.output("blob");
   };
 
+  const validateRequiredFields = (): boolean => {
+    const missing: string[] = [];
+    if (!compteur.trim()) missing.push("Compteur kilométrique");
+    if (!dateIntervention.trim()) missing.push("Date");
+    if (!heureArrivee.trim()) missing.push("Heure d'arrivée");
+    if (!hopital.trim()) missing.push("Hôpital de destination");
+    if (missing.length > 0) {
+      toast.error(`Champs obligatoires manquants : ${missing.join(", ")}`);
+      return false;
+    }
+    return true;
+  };
+
   const shareViaWhatsApp = async () => {
+    if (!validateRequiredFields()) return;
     try {
       const blob = await generatePDF();
       const fileName = `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
