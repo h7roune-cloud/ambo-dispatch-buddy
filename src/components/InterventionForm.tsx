@@ -407,7 +407,7 @@ const InterventionForm = () => {
             <Input type="date" value={dateIntervention} onChange={(e) => setDateIntervention(e.target.value)} />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Heure</Label>
+            <Label className="text-xs text-muted-foreground">Heure <span className="text-red-500">*</span></Label>
             <Input type="time" value={heureArrivee} onChange={(e) => setHeureArrivee(e.target.value)} />
           </div>
         </div>
