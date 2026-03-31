@@ -270,6 +270,7 @@ const InterventionForm = () => {
       y += 4;
     }
 
+    addLine(`N° Urgence: ${numeroUrgence}`, 11);
     addLine(`Hopital: ${hopital}`, 11);
     addLine(`Police: ${policePresente ? "Presente" : "Absente"}`, 11);
     addLine(`Gendarmerie: ${gendarmeriePresente ? "Presente" : "Absente"}`, 11);
