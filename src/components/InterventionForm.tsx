@@ -120,21 +120,15 @@ const InterventionForm = () => {
   };
 
   const handlePhotosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
-    const items = await Promise.all(
-      files.map(
-        (file, i) =>
-          new Promise<PhotoIntervention>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () =>
-              resolve({ id: Date.now() + i, dataUrl: reader.result as string });
-            reader.readAsDataURL(file);
-          })
-      )
-    );
-    setPhotosIntervention((prev) => [...prev, ...items]);
-    // Reset after reading to allow re-selecting the same file
+    const file = e.currentTarget.files?.[0];
+    if (!file) return;
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    setPhotosIntervention((prev) => [...prev, { id: Date.now(), dataUrl }]);
     e.currentTarget.value = "";
   };
 
