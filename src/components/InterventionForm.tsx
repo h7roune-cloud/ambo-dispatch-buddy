@@ -403,7 +403,7 @@ const InterventionForm = () => {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-muted-foreground">Date</Label>
+            <Label className="text-xs text-muted-foreground">Date <span className="text-red-500">*</span></Label>
             <Input type="date" value={dateIntervention} onChange={(e) => setDateIntervention(e.target.value)} />
           </div>
           <div>
