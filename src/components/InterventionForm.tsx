@@ -118,21 +118,23 @@ const InterventionForm = () => {
     reader.readAsDataURL(file);
   };
 
-  const handlePhotosUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const newId = Date.now() + Math.random();
-        setPhotosIntervention((prev) => [
-          ...prev,
-          { id: newId, dataUrl: reader.result as string },
-        ]);
-      };
-      reader.readAsDataURL(file);
-    });
-    e.target.value = "";
+  const handlePhotosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const items = await Promise.all(
+      files.map(
+        (file, i) =>
+          new Promise<PhotoIntervention>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () =>
+              resolve({ id: Date.now() + i, dataUrl: reader.result as string });
+            reader.readAsDataURL(file);
+          })
+      )
+    );
+    setPhotosIntervention((prev) => [...prev, ...items]);
+    // Reset after reading to allow re-selecting the same file
+    e.currentTarget.value = "";
   };
 
   const removePhoto = (id: number) => {
