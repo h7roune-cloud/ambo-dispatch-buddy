@@ -116,6 +116,7 @@ const InterventionForm = () => {
       updateVictime(victimeId, "carteIdentite", reader.result as string);
     };
     reader.readAsDataURL(file);
+    e.currentTarget.value = "";
   };
 
   const handlePhotosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
