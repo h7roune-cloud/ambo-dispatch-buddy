@@ -586,7 +586,7 @@ const InterventionForm = () => {
           <input
             type="file"
             accept="image/*"
-            multiple
+            capture="environment"
             className="hidden"
             ref={photosInputRef}
             onChange={handlePhotosUpload}
