@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2, FileText } from "lucide-react";
+import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2, FileText, Phone } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
@@ -78,6 +78,7 @@ const InterventionForm = () => {
   const [victimes, setVictimes] = useState<Victime[]>([
     { id: 1, nom: "", prenom: "", age: "", etat: "léger", carteIdentite: null },
   ]);
+  const [numeroUrgence, setNumeroUrgence] = useState("");
   const [hopital, setHopital] = useState("");
   const [policePresente, setPolicePresente] = useState(false);
   const [gendarmeriePresente, setGendarmeriePresente] = useState(false);
@@ -155,6 +156,7 @@ const InterventionForm = () => {
       report += `  État: ${v.etat === "grave" ? "🔴 GRAVE" : "🟢 Léger"}\n\n`;
     });
 
+    report += `📞 N° Urgence: ${numeroUrgence}\n`;
     report += `🏥 Hôpital: ${hopital}\n`;
     report += `👮 Police: ${policePresente ? "✅ Présente" : "❌ Absente"}\n`;
     report += `🛡️ Gendarmerie: ${gendarmeriePresente ? "✅ Présente" : "❌ Absente"}\n`;
@@ -268,6 +270,7 @@ const InterventionForm = () => {
       y += 4;
     }
 
+    addLine(`N° Urgence: ${numeroUrgence}`, 11);
     addLine(`Hopital: ${hopital}`, 11);
     addLine(`Police: ${policePresente ? "Presente" : "Absente"}`, 11);
     addLine(`Gendarmerie: ${gendarmeriePresente ? "Presente" : "Absente"}`, 11);
@@ -551,6 +554,15 @@ const InterventionForm = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Numéro d'urgence */}
+      <div className="field-group space-y-3">
+        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+          <Phone className="w-4 h-4" />
+          Numéro d'urgence
+        </div>
+        <Input type="tel" placeholder="Numéro d'urgence" value={numeroUrgence} onChange={(e) => setNumeroUrgence(e.target.value)} />
       </div>
 
       {/* Hôpital */}
