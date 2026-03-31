@@ -156,6 +156,7 @@ const InterventionForm = () => {
       report += `  État: ${v.etat === "grave" ? "🔴 GRAVE" : "🟢 Léger"}\n\n`;
     });
 
+    report += `📞 N° Urgence: ${numeroUrgence}\n`;
     report += `🏥 Hôpital: ${hopital}\n`;
     report += `👮 Police: ${policePresente ? "✅ Présente" : "❌ Absente"}\n`;
     report += `🛡️ Gendarmerie: ${gendarmeriePresente ? "✅ Présente" : "❌ Absente"}\n`;
