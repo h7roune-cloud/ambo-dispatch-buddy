@@ -420,7 +420,7 @@ const InterventionForm = () => {
           Localisation
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Compteur kilométrique</Label>
+          <Label className="text-xs text-muted-foreground">Compteur kilométrique <span className="text-red-500">*</span></Label>
           <Input type="number" placeholder="Ex: 45230" value={compteur} onChange={(e) => setCompteur(e.target.value)} />
         </div>
         <div>
