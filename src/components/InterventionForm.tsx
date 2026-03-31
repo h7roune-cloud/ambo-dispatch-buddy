@@ -403,11 +403,11 @@ const InterventionForm = () => {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-muted-foreground">Date</Label>
+            <Label className="text-xs text-muted-foreground">Date <span className="text-red-500">*</span></Label>
             <Input type="date" value={dateIntervention} onChange={(e) => setDateIntervention(e.target.value)} />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Heure</Label>
+            <Label className="text-xs text-muted-foreground">Heure <span className="text-red-500">*</span></Label>
             <Input type="time" value={heureArrivee} onChange={(e) => setHeureArrivee(e.target.value)} />
           </div>
         </div>
@@ -420,7 +420,7 @@ const InterventionForm = () => {
           Localisation
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Compteur kilométrique</Label>
+          <Label className="text-xs text-muted-foreground">Compteur kilométrique <span className="text-red-500">*</span></Label>
           <Input type="number" placeholder="Ex: 45230" value={compteur} onChange={(e) => setCompteur(e.target.value)} />
         </div>
         <div>
@@ -557,7 +557,7 @@ const InterventionForm = () => {
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <Building2 className="w-4 h-4" />
-          Hôpital de destination
+          Hôpital de destination <span className="text-red-500">*</span>
         </div>
         <Input placeholder="Nom de l'hôpital" value={hopital} onChange={(e) => setHopital(e.target.value)} />
       </div>
