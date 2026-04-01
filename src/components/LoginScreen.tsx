@@ -57,8 +57,10 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
                 type="password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(false); }}
+                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300)}
                 placeholder="Entrez votre mot de passe"
-                className={`pl-10 ${error ? "border-destructive" : ""}`}
+                className={`pl-10 text-base ${error ? "border-destructive" : ""}`}
+                style={{ fontSize: "16px" }}
               />
             </div>
           </div>
