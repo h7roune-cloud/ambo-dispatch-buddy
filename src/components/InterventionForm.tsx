@@ -374,13 +374,38 @@ const InterventionForm = () => {
     try {
       const blob = await generatePDF();
       const fileName = `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
-      const file = new File([blob], fileName, { type: "application/pdf" });
+      const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      // Convert all photos to File objects
+      const photoFiles: File[] = [];
+
+      // Photos d'intervention
+      for (let i = 0; i < photosIntervention.length; i++) {
+        try {
+          const res = await fetch(photosIntervention[i].dataUrl);
+          const photoBlob = await res.blob();
+          photoFiles.push(new File([photoBlob], `intervention-photo-${i + 1}.jpg`, { type: "image/jpeg" }));
+        } catch { /* skip failed photo */ }
+      }
+
+      // Photos cartes d'identité des victimes
+      for (let i = 0; i < victimes.length; i++) {
+        if (victimes[i].carteIdentite) {
+          try {
+            const res = await fetch(victimes[i].carteIdentite!);
+            const photoBlob = await res.blob();
+            photoFiles.push(new File([photoBlob], `carte-identite-victime-${i + 1}.jpg`, { type: "image/jpeg" }));
+          } catch { /* skip failed photo */ }
+        }
+      }
+
+      const allFiles = [pdfFile, ...photoFiles];
+
+      if (navigator.share && navigator.canShare?.({ files: allFiles })) {
         await navigator.share({
           title: "Fiche d'Intervention - Protection Civile Nouaceur",
           text: buildReport(),
-          files: [file],
+          files: allFiles,
         });
         toast.success("Rapport partagé avec succès");
       } else {
