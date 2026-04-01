@@ -88,6 +88,29 @@ const InterventionForm = () => {
   const photosInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
 
+  const compressImage = (dataUrl: string, maxSize = 1200, quality = 0.7): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (w > maxSize || h > maxSize) {
+          const ratio = Math.min(maxSize / w, maxSize / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas context failed"));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => reject(new Error("Image load failed"));
+      img.src = dataUrl;
+    });
+
   const updateVictime = (id: number, field: keyof Victime, value: string | null) => {
     setVictimes((prev) =>
       prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
@@ -109,12 +132,17 @@ const InterventionForm = () => {
     setNombreVictimes(String(victimes.length - 1));
   };
 
-  const handleImageUpload = (victimeId: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (victimeId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      updateVictime(victimeId, "carteIdentite", reader.result as string);
+    reader.onload = async () => {
+      try {
+        const compressed = await compressImage(reader.result as string);
+        updateVictime(victimeId, "carteIdentite", compressed);
+      } catch {
+        updateVictime(victimeId, "carteIdentite", reader.result as string);
+      }
     };
     reader.readAsDataURL(file);
     e.currentTarget.value = "";
@@ -123,12 +151,16 @@ const InterventionForm = () => {
   const handlePhotosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
     if (!file) return;
-    const dataUrl = await new Promise<string>((resolve, reject) => {
+    const rawDataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+    let dataUrl = rawDataUrl;
+    try {
+      dataUrl = await compressImage(rawDataUrl);
+    } catch { /* use raw */ }
     setPhotosIntervention((prev) => [...prev, { id: Date.now(), dataUrl }]);
     e.currentTarget.value = "";
   };
