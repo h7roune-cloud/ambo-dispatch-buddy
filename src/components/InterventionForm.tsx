@@ -132,12 +132,17 @@ const InterventionForm = () => {
     setNombreVictimes(String(victimes.length - 1));
   };
 
-  const handleImageUpload = (victimeId: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (victimeId: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      updateVictime(victimeId, "carteIdentite", reader.result as string);
+    reader.onload = async () => {
+      try {
+        const compressed = await compressImage(reader.result as string);
+        updateVictime(victimeId, "carteIdentite", compressed);
+      } catch {
+        updateVictime(victimeId, "carteIdentite", reader.result as string);
+      }
     };
     reader.readAsDataURL(file);
     e.currentTarget.value = "";
