@@ -151,12 +151,16 @@ const InterventionForm = () => {
   const handlePhotosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
     if (!file) return;
-    const dataUrl = await new Promise<string>((resolve, reject) => {
+    const rawDataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+    let dataUrl = rawDataUrl;
+    try {
+      dataUrl = await compressImage(rawDataUrl);
+    } catch { /* use raw */ }
     setPhotosIntervention((prev) => [...prev, { id: Date.now(), dataUrl }]);
     e.currentTarget.value = "";
   };
