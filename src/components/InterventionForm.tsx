@@ -221,6 +221,49 @@ const InterventionForm = () => {
       image.src = dataUrl;
     });
 
+  const addWatermark = (doc: jsPDF) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      // Try to add logo as watermark
+      try {
+        const logoImg = document.querySelector('header img[alt="Logo Protection Civile"]') as HTMLImageElement;
+        if (logoImg) {
+          const canvas = document.createElement("canvas");
+          canvas.width = logoImg.naturalWidth || 200;
+          canvas.height = logoImg.naturalHeight || 200;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.globalAlpha = 0.08;
+            ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
+            const watermarkData = canvas.toDataURL("image/png");
+            const wmSize = 120;
+            doc.addImage(
+              watermarkData,
+              "PNG",
+              (pageWidth - wmSize) / 2,
+              (pageHeight - wmSize) / 2,
+              wmSize,
+              wmSize
+            );
+          }
+        }
+      } catch { /* skip watermark if logo fails */ }
+      // Text watermark as fallback
+      doc.setFontSize(50);
+      doc.setTextColor(200, 200, 200);
+      doc.setFont("helvetica", "bold");
+      const text = "PROTECTION CIVILE";
+      doc.text(text, pageWidth / 2, pageHeight / 2, {
+        align: "center",
+        angle: 45,
+      });
+      doc.setTextColor(0, 0, 0);
+    }
+  };
+
   const generatePDF = async (): Promise<Blob> => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -347,11 +390,17 @@ const InterventionForm = () => {
       }
     }
 
-    // Footer
-    y += 10;
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.text("Cree par Ayoub Sadkouni", pageWidth / 2, 285, { align: "center" });
+    // Footer on all pages
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.text("Cree par Ayoub Sadkouni", pageWidth / 2, 285, { align: "center" });
+    }
+
+    // Add watermark on all pages
+    addWatermark(doc);
 
     return doc.output("blob");
   };
