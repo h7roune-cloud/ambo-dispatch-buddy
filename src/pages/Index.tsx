@@ -2,6 +2,7 @@ import { useState } from "react";
 import InterventionForm from "@/components/InterventionForm";
 import ThemeToggle from "@/components/ThemeToggle";
 import LoginScreen from "@/components/LoginScreen";
+import ConduiteATenir from "@/components/ConduiteATenir";
 import logo from "@/assets/logo.png";
 
 const Index = () => {
@@ -29,6 +30,9 @@ const Index = () => {
 
       {/* Form */}
       <main className="max-w-xl mx-auto px-4 py-5 pb-20">
+        <div className="mb-4">
+          <ConduiteATenir />
+        </div>
         <InterventionForm />
       </main>
 
