@@ -34,7 +34,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4" dir={isRtl ? "rtl" : "ltr"}>
       <div className="w-full max-w-sm space-y-6">
         <div className="flex justify-end">
-          <LanguageToggle />
+          <LanguageToggle variant="default" />
         </div>
         <div className="flex flex-col items-center gap-3">
           <img src={logo} alt="Logo Protection Civile" width={80} height={80} className="rounded-xl" />
