@@ -5,47 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, MapPin, Users, UserCheck, Building2, Shield, Share2, MessageCircle, Camera, Plus, Trash2, FileText, Phone } from "lucide-react";
+import { Clock, MapPin, Users, UserCheck, Building2, Shield, Camera, Plus, Trash2, FileText, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
-
-const VICTIMES_EN_DANGER = [
-  "Crise cardiaque",
-  "Crise d'épilepsie",
-  "Crise d'asthme",
-  "Crise de panique",
-  "Crise diabétique",
-  "Blessé bagarre",
-  "Blessé chute",
-  "Malaise",
-  "Noyade",
-  "Brûlure",
-  "Électrocution",
-  "Intoxication",
-  "Tentative de suicide",
-  "Accouchement",
-  "Étouffement",
-  "Hémorragie",
-  "Morsure de serpent / animal",
-  "Allergie grave",
-  "Autre",
-];
-
-const ACCIDENTS_CIRCULATION = [
-  "Collision entre deux véhicules",
-  "Carambolage",
-  "Heurt de piéton",
-  "Renversement",
-  "Sortie de route",
-  "Accident de moto",
-  "Accident de vélo",
-  "Accident de camion / poids lourd",
-  "Accident de bus / transport en commun",
-  "Collision frontale",
-  "Collision latérale",
-  "Tonneau",
-  "Autre",
-];
+import { useLanguage, getVictimTypes, getAccidentTypes } from "@/contexts/LanguageContext";
 
 interface Victime {
   id: number;
@@ -64,6 +27,8 @@ interface PhotoIntervention {
 type PdfImageFormat = "JPEG" | "PNG" | "WEBP";
 
 const InterventionForm = () => {
+  const { t, lang, isRtl } = useLanguage();
+
   const [heureArrivee, setHeureArrivee] = useState(
     new Date().toTimeString().slice(0, 5)
   );
@@ -87,6 +52,9 @@ const InterventionForm = () => {
 
   const photosInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  const victimTypes = getVictimTypes(lang);
+  const accidentTypes = getAccidentTypes(lang);
 
   const compressImage = (dataUrl: string, maxSize = 1200, quality = 0.7): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -170,31 +138,32 @@ const InterventionForm = () => {
   };
 
   const buildReport = () => {
-    let report = `🚑 *PROTECTION CIVILE NOUACEUR*\n`;
+    const isAr = lang === "ar";
+    let report = `🚑 *${t("header.title")}*\n`;
     report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    report += `📅 Date: ${dateIntervention}\n`;
-    report += `🕐 Heure d'arrivée: ${heureArrivee}\n`;
-    report += `🔢 Compteur: ${compteur} km\n`;
-    report += `📍 Lieu: ${lieuAccident}\n\n`;
-    if (typeVictime) report += `🚨 *Victime en danger:* ${typeVictime}\n`;
-    if (typeAccident) report += `🚗 *Accident de circulation:* ${typeAccident}\n`;
+    report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
+    report += `🕐 ${t("form.time")}: ${heureArrivee}\n`;
+    report += `🔢 ${t("form.counter")}: ${compteur} km\n`;
+    report += `📍 ${t("form.accidentLocation")}: ${lieuAccident}\n\n`;
+    if (typeVictime) report += `🚨 *${t("form.victimDanger")}:* ${typeVictime}\n`;
+    if (typeAccident) report += `🚗 *${t("form.trafficAccident")}:* ${typeAccident}\n`;
     report += `\n`;
-    report += `👥 Nombre de victimes: ${nombreVictimes}\n\n`;
+    report += `👥 ${t("form.victims")}: ${nombreVictimes}\n\n`;
 
     victimes.forEach((v, i) => {
-      report += `━ *Victime ${i + 1}* ━\n`;
-      report += `  Nom: ${v.nom} ${v.prenom}\n`;
-      report += `  Âge: ${v.age}\n`;
-      report += `  État: ${v.etat === "grave" ? "🔴 GRAVE" : "🟢 Léger"}\n\n`;
+      report += `━ *${t("form.victim")} ${i + 1}* ━\n`;
+      report += `  ${t("form.lastName")}: ${v.nom} ${v.prenom}\n`;
+      report += `  ${t("form.age")}: ${v.age}\n`;
+      report += `  ${t("form.state")}: ${v.etat === "grave" ? (isAr ? "🔴 خطير" : "🔴 GRAVE") : (isAr ? "🟢 خفيف" : "🟢 Léger")}\n\n`;
     });
 
-    report += `📞 N° Urgence: ${numeroUrgence}\n`;
-    report += `🏥 Hôpital: ${hopital}\n`;
-    report += `👮 Police: ${policePresente ? "✅ Présente" : "❌ Absente"}\n`;
-    report += `🛡️ Gendarmerie: ${gendarmeriePresente ? "✅ Présente" : "❌ Absente"}\n`;
+    report += `📞 ${t("form.emergencyNumber")}: ${numeroUrgence}\n`;
+    report += `🏥 ${t("form.hospital")}: ${hopital}\n`;
+    report += `👮 ${t("form.policePresent")}: ${policePresente ? "✅" : "❌"}\n`;
+    report += `🛡️ ${t("form.gendarmeriePresent")}: ${gendarmeriePresente ? "✅" : "❌"}\n`;
 
     if (observations) {
-      report += `\n📝 Observations:\n${observations}\n`;
+      report += `\n📝 ${t("form.observations")}:\n${observations}\n`;
     }
 
     return report;
@@ -202,7 +171,6 @@ const InterventionForm = () => {
 
   const getPdfImageFormat = (dataUrl: string): PdfImageFormat => {
     const mimeType = dataUrl.match(/^data:image\/(png|jpe?g|webp)/i)?.[1]?.toLowerCase();
-
     if (mimeType === "png") return "PNG";
     if (mimeType === "webp") return "WEBP";
     return "JPEG";
@@ -227,7 +195,6 @@ const InterventionForm = () => {
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
-      // Try to add logo as watermark
       try {
         const logoImg = document.querySelector('header img[alt="Logo Protection Civile"]') as HTMLImageElement;
         if (logoImg) {
@@ -240,26 +207,14 @@ const InterventionForm = () => {
             ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
             const watermarkData = canvas.toDataURL("image/png");
             const wmSize = 120;
-            doc.addImage(
-              watermarkData,
-              "PNG",
-              (pageWidth - wmSize) / 2,
-              (pageHeight - wmSize) / 2,
-              wmSize,
-              wmSize
-            );
+            doc.addImage(watermarkData, "PNG", (pageWidth - wmSize) / 2, (pageHeight - wmSize) / 2, wmSize, wmSize);
           }
         }
-      } catch { /* skip watermark if logo fails */ }
-      // Text watermark as fallback
+      } catch { /* skip */ }
       doc.setFontSize(50);
       doc.setTextColor(200, 200, 200);
       doc.setFont("helvetica", "bold");
-      const text = "PROTECTION CIVILE";
-      doc.text(text, pageWidth / 2, pageHeight / 2, {
-        align: "center",
-        angle: 45,
-      });
+      doc.text("PROTECTION CIVILE", pageWidth / 2, pageHeight / 2, { align: "center", angle: 45 });
       doc.setTextColor(0, 0, 0);
     }
   };
@@ -315,7 +270,6 @@ const InterventionForm = () => {
       if (v.carteIdentite) {
         try {
           addLine("  Carte d'identite:", 10, true);
-
           const { width, height } = await getImageDimensions(v.carteIdentite);
           const maxWidth = pageWidth - 30;
           const maxHeight = 75;
@@ -323,22 +277,8 @@ const InterventionForm = () => {
           const renderWidth = Math.max(40, width * ratio);
           const renderHeight = Math.max(28, height * ratio);
           const imageFormat = getPdfImageFormat(v.carteIdentite);
-
-          if (y + renderHeight > pageHeight - 20) {
-            doc.addPage();
-            y = 20;
-          }
-
-          doc.addImage(
-            v.carteIdentite,
-            imageFormat,
-            15,
-            y,
-            renderWidth,
-            renderHeight,
-            undefined,
-            imageFormat === "JPEG" ? "MEDIUM" : undefined
-          );
+          if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
+          doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "MEDIUM" : undefined);
           y += renderHeight + 4;
         } catch { /* skip */ }
       }
@@ -356,7 +296,6 @@ const InterventionForm = () => {
       addLine(observations, 10);
     }
 
-    // Photos d'intervention
     if (photosIntervention.length > 0) {
       y += 4;
       addLine("Photos de l'intervention:", 11, true);
@@ -369,28 +308,13 @@ const InterventionForm = () => {
           const renderWidth = Math.max(40, width * ratio);
           const renderHeight = Math.max(28, height * ratio);
           const imageFormat = getPdfImageFormat(photo.dataUrl);
-
-          if (y + renderHeight > pageHeight - 20) {
-            doc.addPage();
-            y = 20;
-          }
-
-          doc.addImage(
-            photo.dataUrl,
-            imageFormat,
-            15,
-            y,
-            renderWidth,
-            renderHeight,
-            undefined,
-            imageFormat === "JPEG" ? "MEDIUM" : undefined
-          );
+          if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
+          doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "MEDIUM" : undefined);
           y += renderHeight + 4;
         } catch { /* skip */ }
       }
     }
 
-    // Footer on all pages
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
@@ -399,20 +323,18 @@ const InterventionForm = () => {
       doc.text("Cree par Ayoub Sadkouni", pageWidth / 2, 285, { align: "center" });
     }
 
-    // Add watermark on all pages
     addWatermark(doc);
-
     return doc.output("blob");
   };
 
   const validateRequiredFields = (): boolean => {
     const missing: string[] = [];
-    if (!compteur.trim()) missing.push("Compteur kilométrique");
-    if (!dateIntervention.trim()) missing.push("Date");
-    if (!heureArrivee.trim()) missing.push("Heure d'arrivée");
-    if (!hopital.trim()) missing.push("Hôpital de destination");
+    if (!compteur.trim()) missing.push(t("form.counter"));
+    if (!dateIntervention.trim()) missing.push(t("form.date"));
+    if (!heureArrivee.trim()) missing.push(t("form.time"));
+    if (!hopital.trim()) missing.push(t("form.hospital"));
     if (missing.length > 0) {
-      toast.error(`Champs obligatoires manquants : ${missing.join(", ")}`);
+      toast.error(`${t("toast.missingFields")} : ${missing.join(", ")}`);
       return false;
     }
     return true;
@@ -425,50 +347,42 @@ const InterventionForm = () => {
       const fileName = `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
-      // Convert all photos to File objects
       const photoFiles: File[] = [];
-
-      // Photos d'intervention
       for (let i = 0; i < photosIntervention.length; i++) {
         try {
           const res = await fetch(photosIntervention[i].dataUrl);
           const photoBlob = await res.blob();
           photoFiles.push(new File([photoBlob], `intervention-photo-${i + 1}.jpg`, { type: "image/jpeg" }));
-        } catch { /* skip failed photo */ }
+        } catch { /* skip */ }
       }
-
-      // Photos cartes d'identité des victimes
       for (let i = 0; i < victimes.length; i++) {
         if (victimes[i].carteIdentite) {
           try {
             const res = await fetch(victimes[i].carteIdentite!);
             const photoBlob = await res.blob();
             photoFiles.push(new File([photoBlob], `carte-identite-victime-${i + 1}.jpg`, { type: "image/jpeg" }));
-          } catch { /* skip failed photo */ }
+          } catch { /* skip */ }
         }
       }
 
       const allFiles = [pdfFile, ...photoFiles];
-
       if (navigator.share && navigator.canShare?.({ files: allFiles })) {
         await navigator.share({
-          title: "Fiche d'Intervention - Protection Civile Nouaceur",
+          title: t("header.subtitle"),
           text: buildReport(),
           files: allFiles,
         });
-        toast.success("Rapport partagé avec succès");
+        toast.success(t("toast.shared"));
       } else {
-        // Fallback: open WhatsApp with text only
         const encoded = encodeURIComponent(buildReport());
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
-        toast.success("Ouverture de WhatsApp...");
+        toast.success(t("toast.whatsappOpen"));
       }
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        // Fallback to text-only WhatsApp
         const encoded = encodeURIComponent(buildReport());
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
-        toast.success("Ouverture de WhatsApp...");
+        toast.success(t("toast.whatsappOpen"));
       }
     }
   };
@@ -478,26 +392,21 @@ const InterventionForm = () => {
     try {
       const blob = await generatePDF();
       const file = new File([blob], `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
-
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: "Fiche d'Intervention",
-          files: [file],
-        });
-        toast.success("Rapport PDF partagé avec succès");
+        await navigator.share({ title: t("header.subtitle"), files: [file] });
+        toast.success(t("toast.pdfShared"));
       } else {
-        // Fallback: download
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = file.name;
         a.click();
         URL.revokeObjectURL(url);
-        toast.success("PDF téléchargé");
+        toast.success(t("toast.pdfDownloaded"));
       }
     } catch (err: any) {
       if (err.name !== "AbortError") {
-        toast.error("Erreur lors de la création du PDF");
+        toast.error(t("toast.pdfError"));
       }
     }
   };
@@ -508,15 +417,15 @@ const InterventionForm = () => {
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <Clock className="w-4 h-4" />
-          Date & Heure d'arrivée
+          {t("form.dateTime")}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs text-muted-foreground">Date <span className="text-red-500">*</span></Label>
+            <Label className="text-xs text-muted-foreground">{t("form.date")} <span className="text-red-500">*</span></Label>
             <Input type="date" value={dateIntervention} onChange={(e) => setDateIntervention(e.target.value)} />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Heure <span className="text-red-500">*</span></Label>
+            <Label className="text-xs text-muted-foreground">{t("form.time")} <span className="text-red-500">*</span></Label>
             <Input type="time" value={heureArrivee} onChange={(e) => setHeureArrivee(e.target.value)} />
           </div>
         </div>
@@ -526,15 +435,15 @@ const InterventionForm = () => {
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <MapPin className="w-4 h-4" />
-          Localisation
+          {t("form.location")}
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Compteur kilométrique <span className="text-red-500">*</span></Label>
-          <Input type="number" placeholder="Ex: 45230" value={compteur} onChange={(e) => setCompteur(e.target.value)} />
+          <Label className="text-xs text-muted-foreground">{t("form.counter")} <span className="text-red-500">*</span></Label>
+          <Input type="number" placeholder={t("form.counterPlaceholder")} value={compteur} onChange={(e) => setCompteur(e.target.value)} />
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Lieu de l'accident</Label>
-          <Input placeholder="Adresse ou description du lieu" value={lieuAccident} onChange={(e) => setLieuAccident(e.target.value)} />
+          <Label className="text-xs text-muted-foreground">{t("form.accidentLocation")}</Label>
+          <Input placeholder={t("form.accidentLocationPlaceholder")} value={lieuAccident} onChange={(e) => setLieuAccident(e.target.value)} />
         </div>
       </div>
 
@@ -542,14 +451,14 @@ const InterventionForm = () => {
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <Shield className="w-4 h-4" />
-          Victime en danger
+          {t("form.victimDanger")}
         </div>
         <Select value={typeVictime} onValueChange={setTypeVictime}>
           <SelectTrigger>
-            <SelectValue placeholder="Sélectionner le type" />
+            <SelectValue placeholder={t("form.selectType")} />
           </SelectTrigger>
           <SelectContent>
-            {VICTIMES_EN_DANGER.map((type) => (
+            {victimTypes.map((type) => (
               <SelectItem key={type} value={type}>{type}</SelectItem>
             ))}
           </SelectContent>
@@ -560,14 +469,14 @@ const InterventionForm = () => {
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <Shield className="w-4 h-4" />
-          Accident de circulation
+          {t("form.trafficAccident")}
         </div>
         <Select value={typeAccident} onValueChange={setTypeAccident}>
           <SelectTrigger>
-            <SelectValue placeholder="Sélectionner le type" />
+            <SelectValue placeholder={t("form.selectType")} />
           </SelectTrigger>
           <SelectContent>
-            {ACCIDENTS_CIRCULATION.map((type) => (
+            {accidentTypes.map((type) => (
               <SelectItem key={type} value={type}>{type}</SelectItem>
             ))}
           </SelectContent>
@@ -579,17 +488,17 @@ const InterventionForm = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
             <Users className="w-4 h-4" />
-            Victimes ({victimes.length})
+            {t("form.victims")} ({victimes.length})
           </div>
           <Button type="button" size="sm" variant="outline" onClick={addVictime} className="h-8 text-xs gap-1">
-            <Plus className="w-3 h-3" /> Ajouter
+            <Plus className="w-3 h-3" /> {t("form.addVictim")}
           </Button>
         </div>
 
         {victimes.map((victime, index) => (
           <div key={victime.id} className="bg-muted/50 rounded-lg p-3 space-y-2 relative">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground">Victime {index + 1}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{t("form.victim")} {index + 1}</span>
               {victimes.length > 1 && (
                 <button onClick={() => removeVictime(victime.id)} className="text-destructive hover:text-destructive/80">
                   <Trash2 className="w-4 h-4" />
@@ -598,28 +507,28 @@ const InterventionForm = () => {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs text-muted-foreground">Nom</Label>
-                <Input placeholder="Nom" value={victime.nom} onChange={(e) => updateVictime(victime.id, "nom", e.target.value)} className="h-9 text-sm" />
+                <Label className="text-xs text-muted-foreground">{t("form.lastName")}</Label>
+                <Input placeholder={t("form.lastName")} value={victime.nom} onChange={(e) => updateVictime(victime.id, "nom", e.target.value)} className="h-9 text-sm" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Prénom</Label>
-                <Input placeholder="Prénom" value={victime.prenom} onChange={(e) => updateVictime(victime.id, "prenom", e.target.value)} className="h-9 text-sm" />
+                <Label className="text-xs text-muted-foreground">{t("form.firstName")}</Label>
+                <Input placeholder={t("form.firstName")} value={victime.prenom} onChange={(e) => updateVictime(victime.id, "prenom", e.target.value)} className="h-9 text-sm" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-xs text-muted-foreground">Âge</Label>
-                <Input type="number" placeholder="Âge" value={victime.age} onChange={(e) => updateVictime(victime.id, "age", e.target.value)} className="h-9 text-sm" />
+                <Label className="text-xs text-muted-foreground">{t("form.age")}</Label>
+                <Input type="number" placeholder={t("form.age")} value={victime.age} onChange={(e) => updateVictime(victime.id, "age", e.target.value)} className="h-9 text-sm" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">État</Label>
+                <Label className="text-xs text-muted-foreground">{t("form.state")}</Label>
                 <Select value={victime.etat} onValueChange={(val) => updateVictime(victime.id, "etat", val)}>
                   <SelectTrigger className="h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="léger">🟢 Léger</SelectItem>
-                    <SelectItem value="grave">🔴 Grave</SelectItem>
+                    <SelectItem value="léger">🟢 {t("form.light")}</SelectItem>
+                    <SelectItem value="grave">🔴 {t("form.severe")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -627,7 +536,7 @@ const InterventionForm = () => {
 
             {/* Carte d'identité */}
             <div>
-              <Label className="text-xs text-muted-foreground">Carte d'identité (photo)</Label>
+              <Label className="text-xs text-muted-foreground">{t("form.idCard")}</Label>
               <input
                 type="file"
                 accept="image/*"
@@ -638,7 +547,7 @@ const InterventionForm = () => {
               />
               {victime.carteIdentite ? (
                 <div className="relative mt-1">
-                  <img src={victime.carteIdentite} alt="Carte d'identité" className="w-full h-32 object-cover rounded-lg border border-border" />
+                  <img src={victime.carteIdentite} alt={t("form.idCard")} className="w-full h-32 object-cover rounded-lg border border-border" />
                   <button
                     onClick={() => updateVictime(victime.id, "carteIdentite", null)}
                     className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs"
@@ -654,7 +563,7 @@ const InterventionForm = () => {
                   className="mt-1 w-full h-9 text-xs gap-1"
                   onClick={() => fileInputRefs.current[victime.id]?.click()}
                 >
-                  <Camera className="w-3 h-3" /> Prendre / Choisir photo
+                  <Camera className="w-3 h-3" /> {t("form.takePhoto")}
                 </Button>
               )}
             </div>
@@ -665,42 +574,42 @@ const InterventionForm = () => {
       {/* Numéro d'urgence */}
       <div className="field-group space-y-3">
         <div className="text-primary font-semibold text-sm">
-          N° d'urgence
+          {t("form.emergencyNumber")}
         </div>
-        <Input type="tel" placeholder="N° d'urgence" value={numeroUrgence} onChange={(e) => setNumeroUrgence(e.target.value)} />
+        <Input type="tel" placeholder={t("form.emergencyPlaceholder")} value={numeroUrgence} onChange={(e) => setNumeroUrgence(e.target.value)} />
       </div>
 
       {/* Hôpital */}
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <Building2 className="w-4 h-4" />
-          Hôpital de destination <span className="text-red-500">*</span>
+          {t("form.hospital")} <span className="text-red-500">*</span>
         </div>
-        <Input placeholder="Nom de l'hôpital" value={hopital} onChange={(e) => setHopital(e.target.value)} />
+        <Input placeholder={t("form.hospitalPlaceholder")} value={hopital} onChange={(e) => setHopital(e.target.value)} />
       </div>
 
       {/* Forces de l'ordre */}
       <div className="field-group space-y-3">
         <div className="flex items-center gap-2 text-primary font-semibold text-sm">
           <UserCheck className="w-4 h-4" />
-          Forces de l'ordre sur le lieu
+          {t("form.lawEnforcement")}
         </div>
         <div className="flex flex-col gap-3">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={policePresente} onCheckedChange={(c) => setPolicePresente(c === true)} />
-            Police présente
+            {t("form.policePresent")}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={gendarmeriePresente} onCheckedChange={(c) => setGendarmeriePresente(c === true)} />
-            Gendarmerie présente
+            {t("form.gendarmeriePresent")}
           </label>
         </div>
       </div>
 
       {/* Observations */}
       <div className="field-group space-y-3">
-        <Label className="text-xs text-muted-foreground">Observations complémentaires</Label>
-        <Textarea placeholder="Notes, détails supplémentaires..." value={observations} onChange={(e) => setObservations(e.target.value)} rows={3} />
+        <Label className="text-xs text-muted-foreground">{t("form.observations")}</Label>
+        <Textarea placeholder={t("form.observationsPlaceholder")} value={observations} onChange={(e) => setObservations(e.target.value)} rows={3} />
       </div>
 
       {/* Photos d'intervention */}
@@ -708,7 +617,7 @@ const InterventionForm = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
             <Camera className="w-4 h-4" />
-            Photos de l'intervention
+            {t("form.interventionPhotos")}
           </div>
           <input
             type="file"
@@ -719,7 +628,7 @@ const InterventionForm = () => {
             onChange={handlePhotosUpload}
           />
           <Button type="button" size="sm" variant="outline" onClick={() => photosInputRef.current?.click()} className="h-8 text-xs gap-1">
-            <Plus className="w-3 h-3" /> Ajouter
+            <Plus className="w-3 h-3" /> {t("form.add")}
           </Button>
         </div>
         {photosIntervention.length > 0 && (
