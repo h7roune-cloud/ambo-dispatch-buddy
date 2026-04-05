@@ -34,14 +34,6 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4" dir={isRtl ? "rtl" : "ltr"}>
       <div className="w-full max-w-sm space-y-6">
         <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const { lang, setLang } = useLanguage();
-            }}
-            className="hidden"
-          />
           <LanguageToggle />
         </div>
         <div className="flex flex-col items-center gap-3">
