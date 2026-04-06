@@ -16,6 +16,7 @@ interface Victime {
   prenom: string;
   age: string;
   etat: string;
+  categorie: "victime" | "accident" | "";
   carteIdentite: string | null;
 }
 

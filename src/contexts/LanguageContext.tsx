@@ -27,6 +27,12 @@ const translations: Record<string, Record<Lang, string>> = {
   "login.errorToast": { fr: "Identifiants incorrects", ar: "بيانات الدخول غير صحيحة" },
   "login.footer": { fr: "Créé par Ayoub Sadkouni", ar: "من إنشاء أيوب صدقوني" },
 
+  // Victim category
+  "form.victimCategory": { fr: "Catégorie", ar: "الفئة" },
+  "form.categoryVictime": { fr: "Victime en danger", ar: "ضحية في خطر" },
+  "form.categoryAccident": { fr: "Accident de circulation", ar: "حادث سير" },
+  "form.selectCategory": { fr: "Sélectionner la catégorie", ar: "اختر الفئة" },
+
   // ConduiteATenir
   "cat.title": { fr: "Conduites à tenir", ar: "التصرفات الواجبة" },
 
