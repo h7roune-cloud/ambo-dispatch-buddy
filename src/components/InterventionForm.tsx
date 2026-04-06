@@ -266,6 +266,8 @@ const InterventionForm = () => {
       const v = victimes[i];
       if (y > pageHeight - 55) { doc.addPage(); y = 20; }
       addLine(`--- Victime ${i + 1} ---`, 11, true);
+      if (v.categorie === "victime") addLine(`  Categorie: Victime en danger`, 10, true);
+      if (v.categorie === "accident") addLine(`  Categorie: Accident de circulation`, 10, true);
       addLine(`  Nom: ${v.nom} ${v.prenom}`, 10);
       addLine(`  Age: ${v.age}`, 10);
       addLine(`  Etat: ${v.etat === "grave" ? "GRAVE" : "Leger"}`, 10);
