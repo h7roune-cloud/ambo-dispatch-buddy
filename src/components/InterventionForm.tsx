@@ -90,7 +90,7 @@ const InterventionForm = () => {
     const newId = victimes.length > 0 ? Math.max(...victimes.map((v) => v.id)) + 1 : 1;
     setVictimes((prev) => [
       ...prev,
-      { id: newId, nom: "", prenom: "", age: "", etat: "léger", carteIdentite: null },
+      { id: newId, nom: "", prenom: "", age: "", etat: "léger", categorie: "", carteIdentite: null },
     ]);
     setNombreVictimes(String(victimes.length + 1));
   };
