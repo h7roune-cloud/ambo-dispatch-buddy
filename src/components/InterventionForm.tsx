@@ -16,6 +16,7 @@ interface Victime {
   prenom: string;
   age: string;
   etat: string;
+  categorie: "victime" | "accident" | "";
   carteIdentite: string | null;
 }
 
@@ -41,7 +42,7 @@ const InterventionForm = () => {
   const [typeAccident, setTypeAccident] = useState("");
   const [nombreVictimes, setNombreVictimes] = useState("1");
   const [victimes, setVictimes] = useState<Victime[]>([
-    { id: 1, nom: "", prenom: "", age: "", etat: "léger", carteIdentite: null },
+    { id: 1, nom: "", prenom: "", age: "", etat: "léger", categorie: "", carteIdentite: null },
   ]);
   const [numeroUrgence, setNumeroUrgence] = useState("");
   const [hopital, setHopital] = useState("");
@@ -89,7 +90,7 @@ const InterventionForm = () => {
     const newId = victimes.length > 0 ? Math.max(...victimes.map((v) => v.id)) + 1 : 1;
     setVictimes((prev) => [
       ...prev,
-      { id: newId, nom: "", prenom: "", age: "", etat: "léger", carteIdentite: null },
+      { id: newId, nom: "", prenom: "", age: "", etat: "léger", categorie: "", carteIdentite: null },
     ]);
     setNombreVictimes(String(victimes.length + 1));
   };
@@ -152,6 +153,8 @@ const InterventionForm = () => {
 
     victimes.forEach((v, i) => {
       report += `━ *${t("form.victim")} ${i + 1}* ━\n`;
+      if (v.categorie === "victime") report += `  📋 ${t("form.victimCategory")}: 🚨 ${t("form.categoryVictime")}\n`;
+      if (v.categorie === "accident") report += `  📋 ${t("form.victimCategory")}: 🚗 ${t("form.categoryAccident")}\n`;
       report += `  ${t("form.lastName")}: ${v.nom} ${v.prenom}\n`;
       report += `  ${t("form.age")}: ${v.age}\n`;
       report += `  ${t("form.state")}: ${v.etat === "grave" ? (isAr ? "🔴 خطير" : "🔴 GRAVE") : (isAr ? "🟢 خفيف" : "🟢 Léger")}\n\n`;
@@ -263,6 +266,8 @@ const InterventionForm = () => {
       const v = victimes[i];
       if (y > pageHeight - 55) { doc.addPage(); y = 20; }
       addLine(`--- Victime ${i + 1} ---`, 11, true);
+      if (v.categorie === "victime") addLine(`  Categorie: Victime en danger`, 10, true);
+      if (v.categorie === "accident") addLine(`  Categorie: Accident de circulation`, 10, true);
       addLine(`  Nom: ${v.nom} ${v.prenom}`, 10);
       addLine(`  Age: ${v.age}`, 10);
       addLine(`  Etat: ${v.etat === "grave" ? "GRAVE" : "Leger"}`, 10);
@@ -516,13 +521,41 @@ const InterventionForm = () => {
         {victimes.map((victime, index) => (
           <div key={victime.id} className="bg-muted/50 rounded-lg p-3 space-y-2 relative">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground">{t("form.victim")} {index + 1}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-muted-foreground">{t("form.victim")} {index + 1}</span>
+                {victime.categorie === "victime" && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-700 dark:text-orange-400 font-medium">
+                    🚨 {t("form.categoryVictime")}
+                  </span>
+                )}
+                {victime.categorie === "accident" && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-700 dark:text-blue-400 font-medium">
+                    🚗 {t("form.categoryAccident")}
+                  </span>
+                )}
+              </div>
               {victimes.length > 1 && (
                 <button onClick={() => removeVictime(victime.id)} className="text-destructive hover:text-destructive/80">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
+
+            {/* Category selector - shown when both types are selected */}
+            {typeVictime && typeAccident && (
+              <div>
+                <Label className="text-xs text-muted-foreground">{t("form.victimCategory")} <span className="text-red-500">*</span></Label>
+                <Select value={victime.categorie} onValueChange={(val) => updateVictime(victime.id, "categorie", val)}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder={t("form.selectCategory")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="victime">🚨 {t("form.categoryVictime")}</SelectItem>
+                    <SelectItem value="accident">🚗 {t("form.categoryAccident")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs text-muted-foreground">{t("form.lastName")}</Label>
