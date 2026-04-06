@@ -667,13 +667,13 @@ const InterventionForm = () => {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 pt-2">
-        <Button onClick={shareViaWhatsApp} className="flex-1 gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white font-semibold">
-          <MessageCircle className="w-4 h-4" />
+      <div className="flex gap-2 sm:gap-3 pt-2">
+        <Button onClick={shareViaWhatsApp} className="flex-1 gap-1 sm:gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white font-semibold text-xs sm:text-sm h-10 sm:h-11">
+          <MessageCircle className="w-4 h-4 shrink-0" />
           WhatsApp
         </Button>
-        <Button onClick={sharePDF} className="flex-1 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-          <FileText className="w-4 h-4" />
+        <Button onClick={sharePDF} className="flex-1 gap-1 sm:gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs sm:text-sm h-10 sm:h-11">
+          <FileText className="w-4 h-4 shrink-0" />
           PDF
         </Button>
       </div>
