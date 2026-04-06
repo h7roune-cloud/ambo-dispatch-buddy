@@ -42,7 +42,7 @@ const InterventionForm = () => {
   const [typeAccident, setTypeAccident] = useState("");
   const [nombreVictimes, setNombreVictimes] = useState("1");
   const [victimes, setVictimes] = useState<Victime[]>([
-    { id: 1, nom: "", prenom: "", age: "", etat: "léger", carteIdentite: null },
+    { id: 1, nom: "", prenom: "", age: "", etat: "léger", categorie: "", carteIdentite: null },
   ]);
   const [numeroUrgence, setNumeroUrgence] = useState("");
   const [hopital, setHopital] = useState("");
