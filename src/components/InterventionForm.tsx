@@ -453,16 +453,25 @@ const InterventionForm = () => {
           <Shield className="w-4 h-4" />
           {t("form.victimDanger")}
         </div>
-        <Select value={typeVictime} onValueChange={setTypeVictime}>
-          <SelectTrigger>
-            <SelectValue placeholder={t("form.selectType")} />
-          </SelectTrigger>
-          <SelectContent>
-            {victimTypes.map((type) => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <Select value={typeVictime} onValueChange={setTypeVictime}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("form.selectType")} />
+              </SelectTrigger>
+              <SelectContent>
+                {victimTypes.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {typeVictime && (
+            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive/80" onClick={() => setTypeVictime("")}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Accident de circulation */}
@@ -471,16 +480,25 @@ const InterventionForm = () => {
           <Shield className="w-4 h-4" />
           {t("form.trafficAccident")}
         </div>
-        <Select value={typeAccident} onValueChange={setTypeAccident}>
-          <SelectTrigger>
-            <SelectValue placeholder={t("form.selectType")} />
-          </SelectTrigger>
-          <SelectContent>
-            {accidentTypes.map((type) => (
-              <SelectItem key={type} value={type}>{type}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <Select value={typeAccident} onValueChange={setTypeAccident}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("form.selectType")} />
+              </SelectTrigger>
+              <SelectContent>
+                {accidentTypes.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {typeAccident && (
+            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive/80" onClick={() => setTypeAccident("")}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Victimes */}
