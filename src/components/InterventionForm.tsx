@@ -153,6 +153,8 @@ const InterventionForm = () => {
 
     victimes.forEach((v, i) => {
       report += `━ *${t("form.victim")} ${i + 1}* ━\n`;
+      if (v.categorie === "victime") report += `  📋 ${t("form.victimCategory")}: 🚨 ${t("form.categoryVictime")}\n`;
+      if (v.categorie === "accident") report += `  📋 ${t("form.victimCategory")}: 🚗 ${t("form.categoryAccident")}\n`;
       report += `  ${t("form.lastName")}: ${v.nom} ${v.prenom}\n`;
       report += `  ${t("form.age")}: ${v.age}\n`;
       report += `  ${t("form.state")}: ${v.etat === "grave" ? (isAr ? "🔴 خطير" : "🔴 GRAVE") : (isAr ? "🟢 خفيف" : "🟢 Léger")}\n\n`;
