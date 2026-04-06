@@ -11,11 +11,11 @@ interface LanguageContextType {
 
 const translations: Record<string, Record<Lang, string>> = {
   // Header
-  "header.title": { fr: "Protection Civile Nouaceur", ar: "الحماية المدنية النواصر" },
+  "header.title": { fr: "Protection Civile Nouaceur", ar: "الوقاية المدنية النواصر" },
   "header.subtitle": { fr: "Fiche d'Intervention", ar: "بطاقة التدخل" },
 
   // Login
-  "login.title": { fr: "Protection Civile Nouaceur", ar: "الحماية المدنية النواصر" },
+  "login.title": { fr: "Protection Civile Nouaceur", ar: "الوقاية المدنية النواصر" },
   "login.subtitle": { fr: "Connectez-vous pour accéder à l'application", ar: "سجّل دخولك للوصول إلى التطبيق" },
   "login.username": { fr: "Identifiant", ar: "اسم المستخدم" },
   "login.password": { fr: "Mot de passe", ar: "كلمة المرور" },
