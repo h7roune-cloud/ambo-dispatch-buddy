@@ -33,7 +33,7 @@ const Index = () => {
       </header>
 
       {/* Form */}
-      <main className="max-w-xl mx-auto px-4 py-5 pb-20">
+      <main className="max-w-xl mx-auto px-3 sm:px-4 py-4 sm:py-5 pb-20">
         <div className="mb-4">
           <ConduiteATenir />
         </div>
