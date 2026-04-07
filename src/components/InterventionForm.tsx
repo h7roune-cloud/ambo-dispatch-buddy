@@ -215,9 +215,6 @@ const InterventionForm = () => {
         }
       } catch { /* skip */ }
       doc.setFontSize(50);
-      doc.setTextColor(200, 200, 200);
-      doc.setFont("helvetica", "bold");
-      doc.text("PROTECTION CIVILE", pageWidth / 2, pageHeight / 2, { align: "center", angle: 45 });
       doc.setTextColor(0, 0, 0);
     }
   };
