@@ -4,6 +4,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import LanguageToggle from "@/components/LanguageToggle";
 import LoginScreen from "@/components/LoginScreen";
 import ConduiteATenir from "@/components/ConduiteATenir";
+import AboutDialog from "@/components/AboutDialog";
 import logo from "@/assets/logo.png";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -27,6 +28,7 @@ const Index = () => {
             <h1 className="text-sm sm:text-lg font-bold leading-tight truncate">{t("header.title")}</h1>
             <p className="text-[10px] sm:text-xs opacity-80 truncate">{t("header.subtitle")}</p>
           </div>
+          <AboutDialog />
           <LanguageToggle />
           <ThemeToggle />
         </div>
