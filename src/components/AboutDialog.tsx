@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { Info, Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -23,8 +23,12 @@ const AboutDialog = () => {
           <p>{t("about.desc1")}</p>
           <p>{t("about.desc2")}</p>
         </div>
-        <div className="pt-3 border-t text-center">
+        <div className="pt-3 border-t text-center space-y-2">
           <p className="text-xs text-muted-foreground">{t("about.createdBy")}</p>
+          <a href="mailto:sadkouni1@gmail.com" className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline">
+            <Mail className="h-3.5 w-3.5" />
+            sadkouni1@gmail.com
+          </a>
         </div>
       </DialogContent>
     </Dialog>
