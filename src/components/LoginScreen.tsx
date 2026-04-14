@@ -31,7 +31,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="min-h-[100dvh] bg-background flex items-center justify-center p-4" dir={isRtl ? "rtl" : "ltr"}>
       <div className="w-full max-w-sm space-y-6">
         <div className="flex justify-end">
           <LanguageToggle variant="default" />

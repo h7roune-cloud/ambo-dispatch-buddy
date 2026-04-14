@@ -19,7 +19,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="min-h-[100dvh] bg-background" dir={isRtl ? "rtl" : "ltr"}>
       {/* Header */}
       <header className="emergency-header text-primary-foreground py-3 sm:py-4 px-3 sm:px-4 shadow-lg sticky top-0 z-50">
         <div className="max-w-xl mx-auto flex items-center gap-2 sm:gap-3">
