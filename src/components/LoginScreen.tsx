@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Lock, User } from "lucide-react";
+import { Lock } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
