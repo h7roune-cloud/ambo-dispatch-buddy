@@ -14,13 +14,12 @@ interface LoginScreenProps {
 
 const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   const { t, isRtl } = useLanguage();
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === "pc_nouaceur" && password === "pc_nouaceur") {
+    if (password === "pc_nouaceur") {
       localStorage.setItem("pc_authenticated", "true");
       onLogin();
       toast.success(t("login.welcome"));
@@ -43,19 +42,6 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4 bg-card border border-border rounded-xl p-5 shadow-lg">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">{t("login.username")}</Label>
-            <div className="relative">
-              <User className={`absolute ${isRtl ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground`} />
-              <Input
-                value={username}
-                onChange={(e) => { setUsername(e.target.value); setError(false); }}
-                placeholder={t("login.usernamePlaceholder")}
-                className={`${isRtl ? "pr-10" : "pl-10"} text-base ${error ? "border-destructive" : ""}`}
-                style={{ fontSize: "16px" }}
-              />
-            </div>
-          </div>
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t("login.password")}</Label>
             <div className="relative">
