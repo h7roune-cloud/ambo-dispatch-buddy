@@ -510,8 +510,8 @@ const InterventionForm = () => {
             <Users className="w-4 h-4" />
             {t("form.victims")} ({victimes.length})
           </div>
-          <Button type="button" size="sm" variant="outline" onClick={addVictime} className="h-8 text-xs gap-1">
-            <Plus className="w-3 h-3" /> {t("form.addVictim")}
+          <Button type="button" size="sm" variant="outline" onClick={addVictime} className="h-10 px-3 text-xs gap-1.5 rounded-lg active:scale-95 transition-transform">
+            <Plus className="w-4 h-4" /> {t("form.addVictim")}
           </Button>
         </div>
 
@@ -608,10 +608,10 @@ const InterventionForm = () => {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="mt-1 w-full h-9 text-xs gap-1"
+                  className="mt-1 w-full h-10 text-xs gap-1.5 rounded-lg active:scale-95 transition-transform"
                   onClick={() => fileInputRefs.current[victime.id]?.click()}
                 >
-                  <Camera className="w-3 h-3" /> {t("form.takePhoto")}
+                  <Camera className="w-4 h-4" /> {t("form.takePhoto")}
                 </Button>
               )}
             </div>
@@ -675,8 +675,8 @@ const InterventionForm = () => {
             ref={photosInputRef}
             onChange={handlePhotosUpload}
           />
-          <Button type="button" size="sm" variant="outline" onClick={() => photosInputRef.current?.click()} className="h-8 text-xs gap-1">
-            <Plus className="w-3 h-3" /> {t("form.add")}
+          <Button type="button" size="sm" variant="outline" onClick={() => photosInputRef.current?.click()} className="h-10 px-3 text-xs gap-1.5 rounded-lg active:scale-95 transition-transform">
+            <Plus className="w-4 h-4" /> {t("form.add")}
           </Button>
         </div>
         {photosIntervention.length > 0 && (
@@ -696,14 +696,14 @@ const InterventionForm = () => {
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 sm:gap-3 pt-2">
-        <Button onClick={shareViaWhatsApp} className="flex-1 gap-1 sm:gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white font-semibold text-xs sm:text-sm h-10 sm:h-11">
-          <MessageCircle className="w-4 h-4 shrink-0" />
+      {/* Actions - sticky bottom bar on mobile */}
+      <div className="sticky bottom-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 flex gap-2 sm:gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+        <Button onClick={shareViaWhatsApp} className="flex-1 gap-1.5 sm:gap-2 bg-[#25D366] hover:bg-[#25D366]/90 active:scale-[0.97] text-white font-semibold text-sm sm:text-base h-12 sm:h-12 rounded-xl transition-transform">
+          <MessageCircle className="w-5 h-5 shrink-0" />
           WhatsApp
         </Button>
-        <Button onClick={sharePDF} className="flex-1 gap-1 sm:gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs sm:text-sm h-10 sm:h-11">
-          <FileText className="w-4 h-4 shrink-0" />
+        <Button onClick={sharePDF} className="flex-1 gap-1.5 sm:gap-2 bg-primary hover:bg-primary/90 active:scale-[0.97] text-primary-foreground font-semibold text-sm sm:text-base h-12 sm:h-12 rounded-xl transition-transform">
+          <FileText className="w-5 h-5 shrink-0" />
           PDF
         </Button>
       </div>
