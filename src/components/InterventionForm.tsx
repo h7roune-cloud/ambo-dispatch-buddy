@@ -51,6 +51,10 @@ const InterventionForm = () => {
   const [gendarmeriePresente, setGendarmeriePresente] = useState(false);
   const [observations, setObservations] = useState("");
   const [photosIntervention, setPhotosIntervention] = useState<PhotoIntervention[]>([]);
+  const [heureArriveeHopital, setHeureArriveeHopital] = useState("");
+  const [compteurHopital, setCompteurHopital] = useState("");
+  const [observationsHopital, setObservationsHopital] = useState("");
+  const [activePage, setActivePage] = useState<"page1" | "page2">("page1");
 
   const photosInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
