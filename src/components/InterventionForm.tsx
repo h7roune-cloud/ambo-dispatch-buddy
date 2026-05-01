@@ -219,11 +219,32 @@ const InterventionForm = () => {
     }
   };
 
+  const dataUrlToFile = (dataUrl: string, filename: string): File | null => {
+    try {
+      const [header, base64] = dataUrl.split(",");
+      const mime = header.match(/data:(.*?);/)?.[1] || "image/jpeg";
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new File([bytes], filename, { type: mime });
+    } catch {
+      return null;
+    }
+  };
+
   const generatePDF = async (): Promise<Blob> => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
+
+    // Pre-load all image dimensions in parallel (avoids sequential awaits)
+    const victimDims = await Promise.all(
+      victimes.map((v) => (v.carteIdentite ? getImageDimensions(v.carteIdentite).catch(() => null) : Promise.resolve(null)))
+    );
+    const photoDims = await Promise.all(
+      photosIntervention.map((p) => getImageDimensions(p.dataUrl).catch(() => null))
+    );
 
     const addLine = (text: string, size = 10, bold = false) => {
       if (y > pageHeight - 20) { doc.addPage(); y = 20; }
@@ -272,16 +293,19 @@ const InterventionForm = () => {
       if (v.carteIdentite) {
         try {
           addLine("  Carte d'identite:", 10, true);
-          const { width, height } = await getImageDimensions(v.carteIdentite);
-          const maxWidth = pageWidth - 30;
-          const maxHeight = 75;
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          const renderWidth = Math.max(40, width * ratio);
-          const renderHeight = Math.max(28, height * ratio);
-          const imageFormat = getPdfImageFormat(v.carteIdentite);
-          if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-          doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "MEDIUM" : undefined);
-          y += renderHeight + 4;
+          const dims = victimDims[i];
+          if (dims) {
+            const { width, height } = dims;
+            const maxWidth = pageWidth - 30;
+            const maxHeight = 75;
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            const renderWidth = Math.max(40, width * ratio);
+            const renderHeight = Math.max(28, height * ratio);
+            const imageFormat = getPdfImageFormat(v.carteIdentite);
+            if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
+            doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
+            y += renderHeight + 4;
+          }
         } catch { /* skip */ }
       }
       y += 4;
@@ -301,9 +325,12 @@ const InterventionForm = () => {
     if (photosIntervention.length > 0) {
       y += 4;
       addLine("Photos de l'intervention:", 11, true);
-      for (const photo of photosIntervention) {
+      for (let pi = 0; pi < photosIntervention.length; pi++) {
+        const photo = photosIntervention[pi];
         try {
-          const { width, height } = await getImageDimensions(photo.dataUrl);
+          const dims = photoDims[pi];
+          if (!dims) continue;
+          const { width, height } = dims;
           const maxWidth = pageWidth - 30;
           const maxHeight = 100;
           const ratio = Math.min(maxWidth / width, maxHeight / height);
@@ -311,7 +338,7 @@ const InterventionForm = () => {
           const renderHeight = Math.max(28, height * ratio);
           const imageFormat = getPdfImageFormat(photo.dataUrl);
           if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-          doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "MEDIUM" : undefined);
+          doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
           y += renderHeight + 4;
         } catch { /* skip */ }
       }
@@ -344,30 +371,26 @@ const InterventionForm = () => {
 
   const shareViaWhatsApp = async () => {
     if (!validateRequiredFields()) return;
+    const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
       const blob = await generatePDF();
       const fileName = `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
       const photoFiles: File[] = [];
-      for (let i = 0; i < photosIntervention.length; i++) {
-        try {
-          const res = await fetch(photosIntervention[i].dataUrl);
-          const photoBlob = await res.blob();
-          photoFiles.push(new File([photoBlob], `intervention-photo-${i + 1}.jpg`, { type: "image/jpeg" }));
-        } catch { /* skip */ }
-      }
-      for (let i = 0; i < victimes.length; i++) {
-        if (victimes[i].carteIdentite) {
-          try {
-            const res = await fetch(victimes[i].carteIdentite!);
-            const photoBlob = await res.blob();
-            photoFiles.push(new File([photoBlob], `carte-identite-victime-${i + 1}.jpg`, { type: "image/jpeg" }));
-          } catch { /* skip */ }
+      photosIntervention.forEach((p, i) => {
+        const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
+        if (f) photoFiles.push(f);
+      });
+      victimes.forEach((v, i) => {
+        if (v.carteIdentite) {
+          const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
+          if (f) photoFiles.push(f);
         }
-      }
+      });
 
       const allFiles = [pdfFile, ...photoFiles];
+      toast.dismiss(loadingId);
       if (navigator.share && navigator.canShare?.({ files: allFiles })) {
         await navigator.share({
           title: t("header.subtitle"),
@@ -381,6 +404,7 @@ const InterventionForm = () => {
         toast.success(t("toast.whatsappOpen"));
       }
     } catch (err: any) {
+      toast.dismiss(loadingId);
       if (err.name !== "AbortError") {
         const encoded = encodeURIComponent(buildReport());
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
@@ -391,9 +415,11 @@ const InterventionForm = () => {
 
   const sharePDF = async () => {
     if (!validateRequiredFields()) return;
+    const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
       const blob = await generatePDF();
       const file = new File([blob], `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
+      toast.dismiss(loadingId);
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ title: t("header.subtitle"), files: [file] });
         toast.success(t("toast.pdfShared"));
@@ -407,6 +433,7 @@ const InterventionForm = () => {
         toast.success(t("toast.pdfDownloaded"));
       }
     } catch (err: any) {
+      toast.dismiss(loadingId);
       if (err.name !== "AbortError") {
         toast.error(t("toast.pdfError"));
       }
