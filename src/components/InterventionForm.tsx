@@ -371,30 +371,26 @@ const InterventionForm = () => {
 
   const shareViaWhatsApp = async () => {
     if (!validateRequiredFields()) return;
+    const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
       const blob = await generatePDF();
       const fileName = `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
       const photoFiles: File[] = [];
-      for (let i = 0; i < photosIntervention.length; i++) {
-        try {
-          const res = await fetch(photosIntervention[i].dataUrl);
-          const photoBlob = await res.blob();
-          photoFiles.push(new File([photoBlob], `intervention-photo-${i + 1}.jpg`, { type: "image/jpeg" }));
-        } catch { /* skip */ }
-      }
-      for (let i = 0; i < victimes.length; i++) {
-        if (victimes[i].carteIdentite) {
-          try {
-            const res = await fetch(victimes[i].carteIdentite!);
-            const photoBlob = await res.blob();
-            photoFiles.push(new File([photoBlob], `carte-identite-victime-${i + 1}.jpg`, { type: "image/jpeg" }));
-          } catch { /* skip */ }
+      photosIntervention.forEach((p, i) => {
+        const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
+        if (f) photoFiles.push(f);
+      });
+      victimes.forEach((v, i) => {
+        if (v.carteIdentite) {
+          const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
+          if (f) photoFiles.push(f);
         }
-      }
+      });
 
       const allFiles = [pdfFile, ...photoFiles];
+      toast.dismiss(loadingId);
       if (navigator.share && navigator.canShare?.({ files: allFiles })) {
         await navigator.share({
           title: t("header.subtitle"),
@@ -408,6 +404,7 @@ const InterventionForm = () => {
         toast.success(t("toast.whatsappOpen"));
       }
     } catch (err: any) {
+      toast.dismiss(loadingId);
       if (err.name !== "AbortError") {
         const encoded = encodeURIComponent(buildReport());
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
