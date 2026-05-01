@@ -386,12 +386,15 @@ const InterventionForm = () => {
     return doc.output("blob");
   };
 
-  const validateRequiredFields = (): boolean => {
+  const validateRequiredFields = (page: "page1" | "page2"): boolean => {
     const missing: string[] = [];
-    if (!compteur.trim()) missing.push(t("form.counter"));
-    if (!dateIntervention.trim()) missing.push(t("form.date"));
-    if (!heureArrivee.trim()) missing.push(t("form.time"));
-    if (!hopital.trim()) missing.push(t("form.hospital"));
+    if (page === "page1") {
+      if (!dateIntervention.trim()) missing.push(t("form.date"));
+      if (!heureArrivee.trim()) missing.push(t("form.time"));
+    } else {
+      if (!compteur.trim()) missing.push(t("form.counter"));
+      if (!hopital.trim()) missing.push(t("form.hospital"));
+    }
     if (missing.length > 0) {
       toast.error(`${t("toast.missingFields")} : ${missing.join(", ")}`);
       return false;
@@ -399,59 +402,61 @@ const InterventionForm = () => {
     return true;
   };
 
-  const shareViaWhatsApp = async () => {
-    if (!validateRequiredFields()) return;
+  const shareViaWhatsApp = async (page: "page1" | "page2") => {
+    if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
-      const blob = await generatePDF();
-      const fileName = `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
+      const blob = await generatePDF(page);
+      const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
       const photoFiles: File[] = [];
-      photosIntervention.forEach((p, i) => {
-        const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
-        if (f) photoFiles.push(f);
-      });
-      victimes.forEach((v, i) => {
-        if (v.carteIdentite) {
-          const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
+      if (page === "page1") {
+        photosIntervention.forEach((p, i) => {
+          const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
           if (f) photoFiles.push(f);
-        }
-      });
+        });
+        victimes.forEach((v, i) => {
+          if (v.carteIdentite) {
+            const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
+            if (f) photoFiles.push(f);
+          }
+        });
+      }
 
       const allFiles = [pdfFile, ...photoFiles];
       toast.dismiss(loadingId);
       if (navigator.share && navigator.canShare?.({ files: allFiles })) {
         await navigator.share({
           title: t("header.subtitle"),
-          text: buildReport(),
+          text: buildReport(page),
           files: allFiles,
         });
         toast.success(t("toast.shared"));
       } else {
-        const encoded = encodeURIComponent(buildReport());
+        const encoded = encodeURIComponent(buildReport(page));
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
         toast.success(t("toast.whatsappOpen"));
       }
     } catch (err: any) {
       toast.dismiss(loadingId);
       if (err.name !== "AbortError") {
-        const encoded = encodeURIComponent(buildReport());
+        const encoded = encodeURIComponent(buildReport(page));
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
         toast.success(t("toast.whatsappOpen"));
       }
     }
   };
 
-  const sharePDF = async () => {
-    if (!validateRequiredFields()) return;
+  const sharePDF = async (page: "page1" | "page2") => {
+    if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
-      const blob = await generatePDF();
-      const file = new File([blob], `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
+      const blob = await generatePDF(page);
+      const file = new File([blob], `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
       toast.dismiss(loadingId);
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: t("header.subtitle"), files: [file] });
+        await navigator.share({ title: t("header.subtitle"), text: buildReport(page), files: [file] });
         toast.success(t("toast.pdfShared"));
       } else {
         const url = URL.createObjectURL(blob);
