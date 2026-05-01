@@ -27,6 +27,18 @@ const translations: Record<string, Record<Lang, string>> = {
   "login.errorToast": { fr: "Identifiants incorrects", ar: "بيانات الدخول غير صحيحة" },
   "login.footer": { fr: "Créé par Ayoub Sadkouni", ar: "من إنشاء أيوب صدقوني" },
 
+  // About
+  "about.title": { fr: "À propos de l'application", ar: "حول التطبيق" },
+  "about.desc1": { fr: "Cette application vise à assurer une fluidité totale dans la communication entre le standardiste et les ambulanciers (équipes de terrain), afin d'accélérer et d'améliorer les opérations de secours à chaque moment critique.", ar: "يهدف هذا التطبيق إلى تحقيق السلاسة التامة في التواصل بين الستاندارديست و الإسعافيين (الأطقم الميدانية)، وذلك لتسريع وتحسين عمليات الإسعاف في كل لحظة حرجة." },
+  "about.desc2": { fr: "Cette application n'est pas un simple outil de communication, mais un pont vital entre le centre et le terrain, garantissant que chaque ambulancier arrive à l'endroit requis avec toutes les informations nécessaires au bon moment.", ar: "هذا التطبيق ليس مجرد أداة تواصل، بل هو جسر حيوي بين المركز والميدان، يضمن أن يصل كل إسعافي إلى المكان المطلوب بكل المعلومات الضرورية في الوقت المناسب." },
+  "about.createdBy": { fr: "Créé par Ayoub Sadkouni", ar: "من إنشاء أيوب صدقوني" },
+
+  // Victim category
+  "form.victimCategory": { fr: "Catégorie", ar: "الفئة" },
+  "form.categoryVictime": { fr: "Victime en danger", ar: "ضحية في خطر" },
+  "form.categoryAccident": { fr: "Accident de circulation", ar: "حادث سير" },
+  "form.selectCategory": { fr: "Sélectionner la catégorie", ar: "اختر الفئة" },
+
   // ConduiteATenir
   "cat.title": { fr: "Conduites à tenir", ar: "التصرفات الواجبة" },
 

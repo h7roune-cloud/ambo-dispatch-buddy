@@ -103,21 +103,81 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100%;
+    min-height: 100%;
+    overflow: auto;
+  }
+
+  #root {
+    min-height: 100%;
+    overflow: auto;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Larger touch targets for all interactive elements */
+  button, a, [role="button"], input, select, textarea, label {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Exception for small inline elements */
+  label.text-xs, span[role="button"] {
+    min-height: auto;
+  }
+
+  /* Smooth momentum scrolling */
+  .overflow-auto, .overflow-y-auto, .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
 @layer components {
   .emergency-header {
     background: linear-gradient(135deg, hsl(var(--primary)), hsl(0 65% 40%));
+    padding-top: env(safe-area-inset-top);
   }
 
   .field-group {
-    @apply bg-card rounded-xl p-4 shadow-sm border border-border;
+    @apply bg-card rounded-xl p-3 sm:p-4 shadow-sm border border-border;
+  }
+}
+
+/* Small phone adjustments (320px - 360px) */
+@media (max-width: 360px) {
+  .field-group {
+    padding: 0.625rem;
+  }
+
+  h1 {
+    font-size: 1rem !important;
+  }
+}
+
+/* Ensure inputs don't overflow on tiny screens */
+@layer utilities {
+  .w-full {
+    max-width: 100%;
   }
 }
