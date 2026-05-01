@@ -238,6 +238,14 @@ const InterventionForm = () => {
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
 
+    // Pre-load all image dimensions in parallel (avoids sequential awaits)
+    const victimDims = await Promise.all(
+      victimes.map((v) => (v.carteIdentite ? getImageDimensions(v.carteIdentite).catch(() => null) : Promise.resolve(null)))
+    );
+    const photoDims = await Promise.all(
+      photosIntervention.map((p) => getImageDimensions(p.dataUrl).catch(() => null))
+    );
+
     const addLine = (text: string, size = 10, bold = false) => {
       if (y > pageHeight - 20) { doc.addPage(); y = 20; }
       doc.setFontSize(size);
