@@ -415,9 +415,11 @@ const InterventionForm = () => {
 
   const sharePDF = async () => {
     if (!validateRequiredFields()) return;
+    const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
       const blob = await generatePDF();
       const file = new File([blob], `intervention_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
+      toast.dismiss(loadingId);
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ title: t("header.subtitle"), files: [file] });
         toast.success(t("toast.pdfShared"));
