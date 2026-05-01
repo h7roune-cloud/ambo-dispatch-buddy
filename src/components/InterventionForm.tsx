@@ -143,35 +143,45 @@ const InterventionForm = () => {
     setPhotosIntervention((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const buildReport = () => {
+  const buildReport = (page: "page1" | "page2" = "page1") => {
     const isAr = lang === "ar";
     let report = `🚑 *${t("header.title")}*\n`;
+    report += `*${page === "page1" ? t("report.page1Title") : t("report.page2Title")}*\n`;
     report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
-    report += `🕐 ${t("form.time")}: ${heureArrivee}\n`;
-    report += `🔢 ${t("form.counter")}: ${compteur} km\n`;
-    report += `📍 ${t("form.accidentLocation")}: ${lieuAccident}\n\n`;
-    if (typeVictime) report += `🚨 *${t("form.victimDanger")}:* ${typeVictime}\n`;
-    if (typeAccident) report += `🚗 *${t("form.trafficAccident")}:* ${typeAccident}\n`;
-    report += `\n`;
-    report += `👥 ${t("form.victims")}: ${nombreVictimes}\n\n`;
 
-    victimes.forEach((v, i) => {
-      report += `━ *${t("form.victim")} ${i + 1}* ━\n`;
-      if (v.categorie === "victime") report += `  📋 ${t("form.victimCategory")}: 🚨 ${t("form.categoryVictime")}${typeVictime ? ` (${typeVictime})` : ""}\n`;
-      if (v.categorie === "accident") report += `  📋 ${t("form.victimCategory")}: 🚗 ${t("form.categoryAccident")}${typeAccident ? ` (${typeAccident})` : ""}\n`;
-      report += `  ${t("form.lastName")}: ${v.nom} ${v.prenom}\n`;
-      report += `  ${t("form.age")}: ${v.age}\n`;
-      report += `  ${t("form.state")}: ${v.etat === "grave" ? (isAr ? "🔴 خطير" : "🔴 GRAVE") : (isAr ? "🟢 خفيف" : "🟢 Léger")}\n\n`;
-    });
+    if (page === "page1") {
+      report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
+      report += `🕐 ${t("form.time")}: ${heureArrivee}\n`;
+      report += `📍 ${t("form.accidentLocation")}: ${lieuAccident}\n\n`;
+      if (typeVictime) report += `🚨 *${t("form.victimDanger")}:* ${typeVictime}\n`;
+      if (typeAccident) report += `🚗 *${t("form.trafficAccident")}:* ${typeAccident}\n`;
+      report += `\n👥 ${t("form.victims")}: ${nombreVictimes}\n\n`;
 
-    report += `🔧 ${t("form.emergencyNumber")}: ${numeroUrgence}\n`;
-    report += `🏥 ${t("form.hospital")}: ${hopital}\n`;
-    report += `👮 ${t("form.policePresent")}: ${policePresente ? "✅" : "❌"}\n`;
-    report += `🛡️ ${t("form.gendarmeriePresent")}: ${gendarmeriePresente ? "✅" : "❌"}\n`;
+      victimes.forEach((v, i) => {
+        report += `━ *${t("form.victim")} ${i + 1}* ━\n`;
+        if (v.categorie === "victime") report += `  📋 ${t("form.victimCategory")}: 🚨 ${t("form.categoryVictime")}${typeVictime ? ` (${typeVictime})` : ""}\n`;
+        if (v.categorie === "accident") report += `  📋 ${t("form.victimCategory")}: 🚗 ${t("form.categoryAccident")}${typeAccident ? ` (${typeAccident})` : ""}\n`;
+        report += `  ${t("form.lastName")}: ${v.nom} ${v.prenom}\n`;
+        report += `  ${t("form.age")}: ${v.age}\n`;
+        report += `  ${t("form.state")}: ${v.etat === "grave" ? (isAr ? "🔴 خطير" : "🔴 GRAVE") : (isAr ? "🟢 خفيف" : "🟢 Léger")}\n\n`;
+      });
 
-    if (observations) {
-      report += `\n📝 ${t("form.observations")}:\n${observations}\n`;
+      report += `👮 ${t("form.policePresent")}: ${policePresente ? "✅" : "❌"}\n`;
+      report += `🛡️ ${t("form.gendarmeriePresent")}: ${gendarmeriePresente ? "✅" : "❌"}\n`;
+
+      if (observations) {
+        report += `\n📝 ${t("form.observations")}:\n${observations}\n`;
+      }
+    } else {
+      report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
+      report += `🔢 ${t("form.counter")}: ${compteur} km\n`;
+      report += `🏥 ${t("form.hospital")}: ${hopital}\n`;
+      report += `🔧 ${t("form.suc")}: ${numeroUrgence}\n`;
+      if (heureArriveeHopital) report += `🕐 ${t("form.hospitalArrivalTime")}: ${heureArriveeHopital}\n`;
+      if (compteurHopital) report += `🔢 ${t("form.hospitalCounter")}: ${compteurHopital} km\n`;
+      if (observationsHopital) {
+        report += `\n📝 ${t("form.observations")}:\n${observationsHopital}\n`;
+      }
     }
 
     return report;
