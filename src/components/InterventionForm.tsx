@@ -285,16 +285,19 @@ const InterventionForm = () => {
       if (v.carteIdentite) {
         try {
           addLine("  Carte d'identite:", 10, true);
-          const { width, height } = await getImageDimensions(v.carteIdentite);
-          const maxWidth = pageWidth - 30;
-          const maxHeight = 75;
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          const renderWidth = Math.max(40, width * ratio);
-          const renderHeight = Math.max(28, height * ratio);
-          const imageFormat = getPdfImageFormat(v.carteIdentite);
-          if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-          doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "MEDIUM" : undefined);
-          y += renderHeight + 4;
+          const dims = victimDims[i];
+          if (dims) {
+            const { width, height } = dims;
+            const maxWidth = pageWidth - 30;
+            const maxHeight = 75;
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            const renderWidth = Math.max(40, width * ratio);
+            const renderHeight = Math.max(28, height * ratio);
+            const imageFormat = getPdfImageFormat(v.carteIdentite);
+            if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
+            doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
+            y += renderHeight + 4;
+          }
         } catch { /* skip */ }
       }
       y += 4;
