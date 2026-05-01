@@ -325,9 +325,12 @@ const InterventionForm = () => {
     if (photosIntervention.length > 0) {
       y += 4;
       addLine("Photos de l'intervention:", 11, true);
-      for (const photo of photosIntervention) {
+      for (let pi = 0; pi < photosIntervention.length; pi++) {
+        const photo = photosIntervention[pi];
         try {
-          const { width, height } = await getImageDimensions(photo.dataUrl);
+          const dims = photoDims[pi];
+          if (!dims) continue;
+          const { width, height } = dims;
           const maxWidth = pageWidth - 30;
           const maxHeight = 100;
           const ratio = Math.min(maxWidth / width, maxHeight / height);
@@ -335,7 +338,7 @@ const InterventionForm = () => {
           const renderHeight = Math.max(28, height * ratio);
           const imageFormat = getPdfImageFormat(photo.dataUrl);
           if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-          doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "MEDIUM" : undefined);
+          doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
           y += renderHeight + 4;
         } catch { /* skip */ }
       }
