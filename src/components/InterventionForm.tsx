@@ -219,6 +219,19 @@ const InterventionForm = () => {
     }
   };
 
+  const dataUrlToFile = (dataUrl: string, filename: string): File | null => {
+    try {
+      const [header, base64] = dataUrl.split(",");
+      const mime = header.match(/data:(.*?);/)?.[1] || "image/jpeg";
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new File([bytes], filename, { type: mime });
+    } catch {
+      return null;
+    }
+  };
+
   const generatePDF = async (): Promise<Blob> => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
