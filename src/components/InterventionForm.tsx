@@ -433,6 +433,7 @@ const InterventionForm = () => {
         toast.success(t("toast.pdfDownloaded"));
       }
     } catch (err: any) {
+      toast.dismiss(loadingId);
       if (err.name !== "AbortError") {
         toast.error(t("toast.pdfError"));
       }
