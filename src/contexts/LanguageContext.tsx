@@ -126,6 +126,15 @@ const translations: Record<string, Record<Lang, string>> = {
   "form.observationsPlaceholder": { fr: "Notes, détails supplémentaires...", ar: "ملاحظات، تفاصيل إضافية..." },
   "form.interventionPhotos": { fr: "Photos de l'intervention", ar: "صور التدخل" },
   "form.add": { fr: "Ajouter", ar: "إضافة" },
+  "form.page1": { fr: "Sur le lieu", ar: "في مكان الحادث" },
+  "form.page2": { fr: "Transport hôpital", ar: "النقل إلى المستشفى" },
+  "form.hospitalArrivalTime": { fr: "Heure d'arrivée à l'hôpital", ar: "ساعة الوصول إلى المستشفى" },
+  "form.hospitalCounter": { fr: "Compteur à l'hôpital (km)", ar: "العداد عند المستشفى (كم)" },
+  "form.suc": { fr: "N° d'urgence (SUC)", ar: "رقم الطوارئ (SUC)" },
+  "form.next": { fr: "Suivant", ar: "التالي" },
+  "form.previous": { fr: "Précédent", ar: "السابق" },
+  "report.page1Title": { fr: "Rapport - Sur le lieu", ar: "تقرير - في مكان الحادث" },
+  "report.page2Title": { fr: "Rapport - Transport hôpital", ar: "تقرير - النقل إلى المستشفى" },
 
   // Toasts
   "toast.shared": { fr: "Rapport partagé avec succès", ar: "تم مشاركة التقرير بنجاح" },
