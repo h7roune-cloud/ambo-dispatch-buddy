@@ -247,19 +247,19 @@ const InterventionForm = () => {
     }
   };
 
-  const generatePDF = async (): Promise<Blob> => {
+  const generatePDF = async (page: "page1" | "page2" = "page1"): Promise<Blob> => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
 
     // Pre-load all image dimensions in parallel (avoids sequential awaits)
-    const victimDims = await Promise.all(
-      victimes.map((v) => (v.carteIdentite ? getImageDimensions(v.carteIdentite).catch(() => null) : Promise.resolve(null)))
-    );
-    const photoDims = await Promise.all(
-      photosIntervention.map((p) => getImageDimensions(p.dataUrl).catch(() => null))
-    );
+    const victimDims = page === "page1"
+      ? await Promise.all(victimes.map((v) => (v.carteIdentite ? getImageDimensions(v.carteIdentite).catch(() => null) : Promise.resolve(null))))
+      : [];
+    const photoDims = page === "page1"
+      ? await Promise.all(photosIntervention.map((p) => getImageDimensions(p.dataUrl).catch(() => null)))
+      : [];
 
     const addLine = (text: string, size = 10, bold = false) => {
       if (y > pageHeight - 20) { doc.addPage(); y = 20; }
@@ -276,86 +276,101 @@ const InterventionForm = () => {
     doc.text("PROTECTION CIVILE NOUACEUR", pageWidth / 2, y, { align: "center" });
     y += 8;
     doc.setFontSize(12);
-    doc.text("Fiche d'Intervention", pageWidth / 2, y, { align: "center" });
+    const subtitle = page === "page1" ? "Fiche d'Intervention - Sur le lieu" : "Fiche d'Intervention - Transport hopital";
+    doc.text(subtitle, pageWidth / 2, y, { align: "center" });
     y += 4;
     doc.setLineWidth(0.5);
     doc.line(15, y, pageWidth - 15, y);
     y += 8;
 
-    addLine(`Date: ${dateIntervention}`, 11);
-    addLine(`Heure d'arrivee: ${heureArrivee}`, 11);
-    addLine(`Compteur: ${compteur} km`, 11);
-    addLine(`Lieu: ${lieuAccident}`, 11);
-    y += 4;
+    if (page === "page1") {
+      addLine(`Date: ${dateIntervention}`, 11);
+      addLine(`Heure d'arrivee: ${heureArrivee}`, 11);
+      addLine(`Lieu: ${lieuAccident}`, 11);
+      y += 4;
 
-    if (typeVictime) addLine(`Victime en danger: ${typeVictime}`, 11, true);
-    if (typeAccident) addLine(`Accident de circulation: ${typeAccident}`, 11, true);
-    y += 4;
+      if (typeVictime) addLine(`Victime en danger: ${typeVictime}`, 11, true);
+      if (typeAccident) addLine(`Accident de circulation: ${typeAccident}`, 11, true);
+      y += 4;
 
-    addLine(`Nombre de victimes: ${nombreVictimes}`, 11);
-    y += 2;
+      addLine(`Nombre de victimes: ${nombreVictimes}`, 11);
+      y += 2;
 
-    for (let i = 0; i < victimes.length; i++) {
-      const v = victimes[i];
-      if (y > pageHeight - 55) { doc.addPage(); y = 20; }
-      addLine(`--- Victime ${i + 1} ---`, 11, true);
-      if (v.categorie === "victime") addLine(`  Categorie: Victime en danger`, 10, true);
-      if (v.categorie === "accident") addLine(`  Categorie: Accident de circulation`, 10, true);
-      addLine(`  Nom: ${v.nom} ${v.prenom}`, 10);
-      addLine(`  Age: ${v.age}`, 10);
-      addLine(`  Etat: ${v.etat === "grave" ? "GRAVE" : "Leger"}`, 10);
+      for (let i = 0; i < victimes.length; i++) {
+        const v = victimes[i];
+        if (y > pageHeight - 55) { doc.addPage(); y = 20; }
+        addLine(`--- Victime ${i + 1} ---`, 11, true);
+        if (v.categorie === "victime") addLine(`  Categorie: Victime en danger`, 10, true);
+        if (v.categorie === "accident") addLine(`  Categorie: Accident de circulation`, 10, true);
+        addLine(`  Nom: ${v.nom} ${v.prenom}`, 10);
+        addLine(`  Age: ${v.age}`, 10);
+        addLine(`  Etat: ${v.etat === "grave" ? "GRAVE" : "Leger"}`, 10);
 
-      if (v.carteIdentite) {
-        try {
-          addLine("  Carte d'identite:", 10, true);
-          const dims = victimDims[i];
-          if (dims) {
+        if (v.carteIdentite) {
+          try {
+            addLine("  Carte d'identite:", 10, true);
+            const dims = victimDims[i];
+            if (dims) {
+              const { width, height } = dims;
+              const maxWidth = pageWidth - 30;
+              const maxHeight = 75;
+              const ratio = Math.min(maxWidth / width, maxHeight / height);
+              const renderWidth = Math.max(40, width * ratio);
+              const renderHeight = Math.max(28, height * ratio);
+              const imageFormat = getPdfImageFormat(v.carteIdentite);
+              if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
+              doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
+              y += renderHeight + 4;
+            }
+          } catch { /* skip */ }
+        }
+        y += 4;
+      }
+
+      addLine(`Police: ${policePresente ? "Presente" : "Absente"}`, 11);
+      addLine(`Gendarmerie: ${gendarmeriePresente ? "Presente" : "Absente"}`, 11);
+
+      if (observations) {
+        y += 4;
+        addLine("Observations:", 11, true);
+        addLine(observations, 10);
+      }
+
+      if (photosIntervention.length > 0) {
+        y += 4;
+        addLine("Photos de l'intervention:", 11, true);
+        for (let pi = 0; pi < photosIntervention.length; pi++) {
+          const photo = photosIntervention[pi];
+          try {
+            const dims = photoDims[pi];
+            if (!dims) continue;
             const { width, height } = dims;
             const maxWidth = pageWidth - 30;
-            const maxHeight = 75;
+            const maxHeight = 100;
             const ratio = Math.min(maxWidth / width, maxHeight / height);
             const renderWidth = Math.max(40, width * ratio);
             const renderHeight = Math.max(28, height * ratio);
-            const imageFormat = getPdfImageFormat(v.carteIdentite);
+            const imageFormat = getPdfImageFormat(photo.dataUrl);
             if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-            doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
+            doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
             y += renderHeight + 4;
-          }
-        } catch { /* skip */ }
+          } catch { /* skip */ }
+        }
       }
-      y += 4;
-    }
+    } else {
+      // Page 2 - Transport hopital
+      addLine(`Date: ${dateIntervention}`, 11);
+      addLine(`Compteur depart: ${compteur} km`, 11);
+      addLine(`Hopital de destination: ${hopital}`, 11);
+      addLine(`N° Urgence (SUC): ${numeroUrgence}`, 11);
+      y += 2;
+      if (heureArriveeHopital) addLine(`Heure d'arrivee a l'hopital: ${heureArriveeHopital}`, 11, true);
+      if (compteurHopital) addLine(`Compteur a l'hopital: ${compteurHopital} km`, 11, true);
 
-    addLine(`N° Urgence: ${numeroUrgence}`, 11);
-    addLine(`Hopital: ${hopital}`, 11);
-    addLine(`Police: ${policePresente ? "Presente" : "Absente"}`, 11);
-    addLine(`Gendarmerie: ${gendarmeriePresente ? "Presente" : "Absente"}`, 11);
-
-    if (observations) {
-      y += 4;
-      addLine("Observations:", 11, true);
-      addLine(observations, 10);
-    }
-
-    if (photosIntervention.length > 0) {
-      y += 4;
-      addLine("Photos de l'intervention:", 11, true);
-      for (let pi = 0; pi < photosIntervention.length; pi++) {
-        const photo = photosIntervention[pi];
-        try {
-          const dims = photoDims[pi];
-          if (!dims) continue;
-          const { width, height } = dims;
-          const maxWidth = pageWidth - 30;
-          const maxHeight = 100;
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          const renderWidth = Math.max(40, width * ratio);
-          const renderHeight = Math.max(28, height * ratio);
-          const imageFormat = getPdfImageFormat(photo.dataUrl);
-          if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-          doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
-          y += renderHeight + 4;
-        } catch { /* skip */ }
+      if (observationsHopital) {
+        y += 4;
+        addLine("Observations:", 11, true);
+        addLine(observationsHopital, 10);
       }
     }
 
