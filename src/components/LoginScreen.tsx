@@ -30,13 +30,18 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background flex items-center justify-center p-4" dir={isRtl ? "rtl" : "ltr"}>
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-[100dvh] bg-background flex flex-col items-center p-4 relative" dir={isRtl ? "rtl" : "ltr"}>
+      {/* Watermark logo at the top */}
+      <div className="w-full flex justify-center pt-6 mb-4">
+        <img src={logo} alt="" width={120} height={120} className="opacity-15 select-none pointer-events-none" />
+      </div>
+
+      <div className="w-full max-w-sm space-y-5 mt-2">
         <div className="flex justify-end">
           <LanguageToggle variant="default" />
         </div>
         <div className="flex flex-col items-center gap-3">
-          <img src={logo} alt="Logo Protection Civile" width={80} height={80} className="rounded-xl" />
+          <img src={logo} alt="Logo Protection Civile" width={72} height={72} className="rounded-xl" />
           <h1 className="text-xl font-bold text-foreground">{t("login.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("login.subtitle")}</p>
         </div>
