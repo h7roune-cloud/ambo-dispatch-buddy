@@ -428,10 +428,12 @@ const InterventionForm = () => {
 
   const validateRequiredFields = (page: "page1" | "page2"): boolean => {
     const missing: string[] = [];
-    if (page === "page1") {
+    // Page 2 requires both pages' fields
+    if (page === "page1" || page === "page2") {
       if (!dateIntervention.trim()) missing.push(t("form.date"));
       if (!heureArrivee.trim()) missing.push(t("form.time"));
-    } else {
+    }
+    if (page === "page2") {
       if (!compteur.trim()) missing.push(t("form.counter"));
       if (!hopital.trim()) missing.push(t("form.hospital"));
     }
