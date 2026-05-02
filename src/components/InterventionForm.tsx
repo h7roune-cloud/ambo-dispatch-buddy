@@ -451,18 +451,17 @@ const InterventionForm = () => {
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
       const photoFiles: File[] = [];
-      if (page === "page1") {
-        photosIntervention.forEach((p, i) => {
-          const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
+      // Always include photos (page1 sends its own, page2 sends both pages' data)
+      photosIntervention.forEach((p, i) => {
+        const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
+        if (f) photoFiles.push(f);
+      });
+      victimes.forEach((v, i) => {
+        if (v.carteIdentite) {
+          const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
           if (f) photoFiles.push(f);
-        });
-        victimes.forEach((v, i) => {
-          if (v.carteIdentite) {
-            const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
-            if (f) photoFiles.push(f);
-          }
-        });
-      }
+        }
+      });
 
       const allFiles = [pdfFile, ...photoFiles];
       toast.dismiss(loadingId);
