@@ -413,8 +413,6 @@ const InterventionForm = () => {
       y += 2;
       addPage2Content();
     }
-      }
-    }
 
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
