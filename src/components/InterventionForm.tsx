@@ -143,11 +143,9 @@ const InterventionForm = () => {
     setPhotosIntervention((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const buildReport = (page: "page1" | "page2" = "page1") => {
+  const buildPageReport = (page: "page1" | "page2") => {
     const isAr = lang === "ar";
-    let report = `🚑 *${t("header.title")}*\n`;
-    report += `*${page === "page1" ? t("report.page1Title") : t("report.page2Title")}*\n`;
-    report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    let report = "";
 
     if (page === "page1") {
       report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
@@ -173,7 +171,6 @@ const InterventionForm = () => {
         report += `\n📝 ${t("form.observations")}:\n${observations}\n`;
       }
     } else {
-      report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
       report += `🔢 ${t("form.counter")}: ${compteur} km\n`;
       report += `🏥 ${t("form.hospital")}: ${hopital}\n`;
       report += `🔧 ${t("form.suc")}: ${numeroUrgence}\n`;
@@ -182,6 +179,26 @@ const InterventionForm = () => {
       if (observationsHopital) {
         report += `\n📝 ${t("form.observations")}:\n${observationsHopital}\n`;
       }
+    }
+
+    return report;
+  };
+
+  const buildReport = (page: "page1" | "page2" = "page1") => {
+    let report = `🚑 *${t("header.title")}*\n`;
+
+    if (page === "page2") {
+      // Page 2: include both pages
+      report += `*${t("report.page1Title")}*\n`;
+      report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      report += buildPageReport("page1");
+      report += `\n\n*${t("report.page2Title")}*\n`;
+      report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      report += buildPageReport("page2");
+    } else {
+      report += `*${t("report.page1Title")}*\n`;
+      report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      report += buildPageReport("page1");
     }
 
     return report;
@@ -253,11 +270,11 @@ const InterventionForm = () => {
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
 
-    // Pre-load all image dimensions in parallel (avoids sequential awaits)
-    const victimDims = page === "page1"
+    // Pre-load all image dimensions in parallel
+    const victimDims = (page === "page1" || page === "page2")
       ? await Promise.all(victimes.map((v) => (v.carteIdentite ? getImageDimensions(v.carteIdentite).catch(() => null) : Promise.resolve(null))))
       : [];
-    const photoDims = page === "page1"
+    const photoDims = (page === "page1" || page === "page2")
       ? await Promise.all(photosIntervention.map((p) => getImageDimensions(p.dataUrl).catch(() => null)))
       : [];
 
@@ -270,20 +287,7 @@ const InterventionForm = () => {
       y += lines.length * (size * 0.5) + 2;
     };
 
-    // Title
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("PROTECTION CIVILE NOUACEUR", pageWidth / 2, y, { align: "center" });
-    y += 8;
-    doc.setFontSize(12);
-    const subtitle = page === "page1" ? "Fiche d'Intervention - Sur le lieu" : "Fiche d'Intervention - Transport hopital";
-    doc.text(subtitle, pageWidth / 2, y, { align: "center" });
-    y += 4;
-    doc.setLineWidth(0.5);
-    doc.line(15, y, pageWidth - 15, y);
-    y += 8;
-
-    if (page === "page1") {
+    const addPage1Content = () => {
       addLine(`Date: ${dateIntervention}`, 11);
       addLine(`Heure d'arrivee: ${heureArrivee}`, 11);
       addLine(`Lieu: ${lieuAccident}`, 11);
@@ -357,8 +361,9 @@ const InterventionForm = () => {
           } catch { /* skip */ }
         }
       }
-    } else {
-      // Page 2 - Transport hopital
+    };
+
+    const addPage2Content = () => {
       addLine(`Date: ${dateIntervention}`, 11);
       addLine(`Compteur depart: ${compteur} km`, 11);
       addLine(`Hopital de destination: ${hopital}`, 11);
@@ -372,6 +377,41 @@ const InterventionForm = () => {
         addLine("Observations:", 11, true);
         addLine(observationsHopital, 10);
       }
+    };
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROTECTION CIVILE NOUACEUR", pageWidth / 2, y, { align: "center" });
+    y += 8;
+    doc.setFontSize(12);
+
+    if (page === "page1") {
+      doc.text("Fiche d'Intervention - Sur le lieu", pageWidth / 2, y, { align: "center" });
+      y += 4;
+      doc.setLineWidth(0.5);
+      doc.line(15, y, pageWidth - 15, y);
+      y += 8;
+      addPage1Content();
+    } else {
+      // Page 2: include both pages in one PDF
+      doc.text("Fiche d'Intervention - Rapport Complet", pageWidth / 2, y, { align: "center" });
+      y += 4;
+      doc.setLineWidth(0.5);
+      doc.line(15, y, pageWidth - 15, y);
+      y += 8;
+
+      // Section 1: Sur le lieu
+      addLine("=== Sur le lieu ===", 12, true);
+      y += 2;
+      addPage1Content();
+
+      // Section 2: Transport hopital
+      y += 6;
+      if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+      addLine("=== Transport hopital ===", 12, true);
+      y += 2;
+      addPage2Content();
     }
 
     const totalPages = doc.getNumberOfPages();
@@ -388,10 +428,12 @@ const InterventionForm = () => {
 
   const validateRequiredFields = (page: "page1" | "page2"): boolean => {
     const missing: string[] = [];
-    if (page === "page1") {
+    // Page 2 requires both pages' fields
+    if (page === "page1" || page === "page2") {
       if (!dateIntervention.trim()) missing.push(t("form.date"));
       if (!heureArrivee.trim()) missing.push(t("form.time"));
-    } else {
+    }
+    if (page === "page2") {
       if (!compteur.trim()) missing.push(t("form.counter"));
       if (!hopital.trim()) missing.push(t("form.hospital"));
     }
@@ -411,18 +453,17 @@ const InterventionForm = () => {
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
       const photoFiles: File[] = [];
-      if (page === "page1") {
-        photosIntervention.forEach((p, i) => {
-          const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
+      // Always include photos (page1 sends its own, page2 sends both pages' data)
+      photosIntervention.forEach((p, i) => {
+        const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
+        if (f) photoFiles.push(f);
+      });
+      victimes.forEach((v, i) => {
+        if (v.carteIdentite) {
+          const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
           if (f) photoFiles.push(f);
-        });
-        victimes.forEach((v, i) => {
-          if (v.carteIdentite) {
-            const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
-            if (f) photoFiles.push(f);
-          }
-        });
-      }
+        }
+      });
 
       const allFiles = [pdfFile, ...photoFiles];
       toast.dismiss(loadingId);
