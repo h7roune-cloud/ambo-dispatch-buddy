@@ -270,11 +270,11 @@ const InterventionForm = () => {
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
 
-    // Pre-load all image dimensions in parallel (avoids sequential awaits)
-    const victimDims = page === "page1"
+    // Pre-load all image dimensions in parallel
+    const victimDims = (page === "page1" || page === "page2")
       ? await Promise.all(victimes.map((v) => (v.carteIdentite ? getImageDimensions(v.carteIdentite).catch(() => null) : Promise.resolve(null))))
       : [];
-    const photoDims = page === "page1"
+    const photoDims = (page === "page1" || page === "page2")
       ? await Promise.all(photosIntervention.map((p) => getImageDimensions(p.dataUrl).catch(() => null)))
       : [];
 
@@ -287,20 +287,7 @@ const InterventionForm = () => {
       y += lines.length * (size * 0.5) + 2;
     };
 
-    // Title
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("PROTECTION CIVILE NOUACEUR", pageWidth / 2, y, { align: "center" });
-    y += 8;
-    doc.setFontSize(12);
-    const subtitle = page === "page1" ? "Fiche d'Intervention - Sur le lieu" : "Fiche d'Intervention - Transport hopital";
-    doc.text(subtitle, pageWidth / 2, y, { align: "center" });
-    y += 4;
-    doc.setLineWidth(0.5);
-    doc.line(15, y, pageWidth - 15, y);
-    y += 8;
-
-    if (page === "page1") {
+    const addPage1Content = () => {
       addLine(`Date: ${dateIntervention}`, 11);
       addLine(`Heure d'arrivee: ${heureArrivee}`, 11);
       addLine(`Lieu: ${lieuAccident}`, 11);
@@ -374,8 +361,9 @@ const InterventionForm = () => {
           } catch { /* skip */ }
         }
       }
-    } else {
-      // Page 2 - Transport hopital
+    };
+
+    const addPage2Content = () => {
       addLine(`Date: ${dateIntervention}`, 11);
       addLine(`Compteur depart: ${compteur} km`, 11);
       addLine(`Hopital de destination: ${hopital}`, 11);
@@ -388,6 +376,43 @@ const InterventionForm = () => {
         y += 4;
         addLine("Observations:", 11, true);
         addLine(observationsHopital, 10);
+      }
+    };
+
+    // Title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("PROTECTION CIVILE NOUACEUR", pageWidth / 2, y, { align: "center" });
+    y += 8;
+    doc.setFontSize(12);
+
+    if (page === "page1") {
+      doc.text("Fiche d'Intervention - Sur le lieu", pageWidth / 2, y, { align: "center" });
+      y += 4;
+      doc.setLineWidth(0.5);
+      doc.line(15, y, pageWidth - 15, y);
+      y += 8;
+      addPage1Content();
+    } else {
+      // Page 2: include both pages in one PDF
+      doc.text("Fiche d'Intervention - Rapport Complet", pageWidth / 2, y, { align: "center" });
+      y += 4;
+      doc.setLineWidth(0.5);
+      doc.line(15, y, pageWidth - 15, y);
+      y += 8;
+
+      // Section 1: Sur le lieu
+      addLine("=== Sur le lieu ===", 12, true);
+      y += 2;
+      addPage1Content();
+
+      // Section 2: Transport hopital
+      y += 6;
+      if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+      addLine("=== Transport hopital ===", 12, true);
+      y += 2;
+      addPage2Content();
+    }
       }
     }
 
