@@ -494,24 +494,41 @@ const InterventionForm = () => {
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
       const blob = await generatePDF(page);
-      const file = new File([blob], `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`, { type: "application/pdf" });
+      const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
+      const pdfFile = new File([blob], fileName, { type: "application/pdf" });
+
+      const photoFiles: File[] = [];
+      photosIntervention.forEach((p, i) => {
+        const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
+        if (f) photoFiles.push(f);
+      });
+      victimes.forEach((v, i) => {
+        if (v.carteIdentite) {
+          const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
+          if (f) photoFiles.push(f);
+        }
+      });
+
+      const allFiles = [pdfFile, ...photoFiles];
       toast.dismiss(loadingId);
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: t("header.subtitle"), text: buildReport(page), files: [file] });
+      if (navigator.share && navigator.canShare?.({ files: allFiles })) {
+        await navigator.share({
+          title: t("header.subtitle"),
+          text: buildReport(page),
+          files: allFiles,
+        });
         toast.success(t("toast.pdfShared"));
       } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = file.name;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success(t("toast.pdfDownloaded"));
+        const encoded = encodeURIComponent(buildReport(page));
+        window.open(`https://wa.me/?text=${encoded}`, "_blank");
+        toast.success(t("toast.whatsappOpen"));
       }
     } catch (err: any) {
       toast.dismiss(loadingId);
       if (err.name !== "AbortError") {
-        toast.error(t("toast.pdfError"));
+        const encoded = encodeURIComponent(buildReport(page));
+        window.open(`https://wa.me/?text=${encoded}`, "_blank");
+        toast.success(t("toast.whatsappOpen"));
       }
     }
   };
