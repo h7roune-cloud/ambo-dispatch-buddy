@@ -143,11 +143,9 @@ const InterventionForm = () => {
     setPhotosIntervention((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const buildReport = (page: "page1" | "page2" = "page1") => {
+  const buildPageReport = (page: "page1" | "page2") => {
     const isAr = lang === "ar";
-    let report = `🚑 *${t("header.title")}*\n`;
-    report += `*${page === "page1" ? t("report.page1Title") : t("report.page2Title")}*\n`;
-    report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    let report = "";
 
     if (page === "page1") {
       report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
@@ -173,7 +171,6 @@ const InterventionForm = () => {
         report += `\n📝 ${t("form.observations")}:\n${observations}\n`;
       }
     } else {
-      report += `📅 ${t("form.date")}: ${dateIntervention}\n`;
       report += `🔢 ${t("form.counter")}: ${compteur} km\n`;
       report += `🏥 ${t("form.hospital")}: ${hopital}\n`;
       report += `🔧 ${t("form.suc")}: ${numeroUrgence}\n`;
@@ -182,6 +179,26 @@ const InterventionForm = () => {
       if (observationsHopital) {
         report += `\n📝 ${t("form.observations")}:\n${observationsHopital}\n`;
       }
+    }
+
+    return report;
+  };
+
+  const buildReport = (page: "page1" | "page2" = "page1") => {
+    let report = `🚑 *${t("header.title")}*\n`;
+
+    if (page === "page2") {
+      // Page 2: include both pages
+      report += `*${t("report.page1Title")}*\n`;
+      report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      report += buildPageReport("page1");
+      report += `\n\n*${t("report.page2Title")}*\n`;
+      report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      report += buildPageReport("page2");
+    } else {
+      report += `*${t("report.page1Title")}*\n`;
+      report += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      report += buildPageReport("page1");
     }
 
     return report;
