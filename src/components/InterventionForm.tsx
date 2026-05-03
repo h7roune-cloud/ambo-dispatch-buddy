@@ -489,6 +489,17 @@ const InterventionForm = () => {
     }
   };
 
+  const downloadFile = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
   const sharePDF = async (page: "page1" | "page2") => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
@@ -511,25 +522,42 @@ const InterventionForm = () => {
 
       const allFiles = [pdfFile, ...photoFiles];
       toast.dismiss(loadingId);
+
+      // Try native share API first (works on most mobile browsers)
       if (navigator.share && navigator.canShare?.({ files: allFiles })) {
-        await navigator.share({
-          title: t("header.subtitle"),
-          text: buildReport(page),
-          files: allFiles,
-        });
-        toast.success(t("toast.pdfShared"));
-      } else {
+        try {
+          await navigator.share({
+            title: t("header.subtitle"),
+            text: buildReport(page),
+            files: allFiles,
+          });
+          toast.success(t("toast.pdfShared"));
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === "AbortError") return;
+          // Fall through to download + WhatsApp fallback
+        }
+      }
+
+      // Fallback: download PDF + each photo, then open WhatsApp with text
+      downloadFile(blob, fileName);
+      photoFiles.forEach((f, i) => {
+        setTimeout(() => downloadFile(f, f.name), (i + 1) * 300);
+      });
+      
+      setTimeout(() => {
         const encoded = encodeURIComponent(buildReport(page));
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
-        toast.success(t("toast.whatsappOpen"));
-      }
+      }, (photoFiles.length + 1) * 300 + 200);
+
+      toast.success(t("toast.pdfShared"));
     } catch (err: any) {
       toast.dismiss(loadingId);
-      if (err.name !== "AbortError") {
-        const encoded = encodeURIComponent(buildReport(page));
-        window.open(`https://wa.me/?text=${encoded}`, "_blank");
-        toast.success(t("toast.whatsappOpen"));
-      }
+      console.error("PDF share error:", err);
+      // Last resort: just open WhatsApp with text
+      const encoded = encodeURIComponent(buildReport(page));
+      window.open(`https://wa.me/?text=${encoded}`, "_blank");
+      toast.success(t("toast.whatsappOpen"));
     }
   };
 
