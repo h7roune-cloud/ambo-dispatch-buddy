@@ -113,6 +113,10 @@
     overflow: auto;
   }
 
+  html {
+    --keyboard-offset: 0px;
+  }
+
   #root {
     min-height: 100%;
     overflow: auto;
@@ -134,6 +138,18 @@
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+
+  body.keyboard-open {
+    overscroll-behavior-y: contain;
+  }
+
+  input,
+  textarea,
+  select,
+  [role="combobox"] {
+    scroll-margin-top: 6rem;
+    scroll-margin-bottom: calc(var(--keyboard-offset, 0px) + 1.5rem);
   }
 
   /* Larger touch targets for all interactive elements */
