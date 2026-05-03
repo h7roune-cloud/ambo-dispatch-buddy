@@ -670,7 +670,7 @@ const InterventionForm = () => {
   };
 
   const ActionBar = ({ page }: { page: "page1" | "page2" }) => (
-    <div className="sticky bottom-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 flex gap-2 sm:gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+    <div className={`sticky bottom-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 flex gap-2 sm:gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] transition-transform duration-200 ${isKeyboardOpen ? "pointer-events-none translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}>
       <Button onClick={() => shareViaWhatsApp(page)} className="flex-1 gap-1.5 sm:gap-2 bg-[#25D366] hover:bg-[#25D366]/90 active:scale-[0.97] text-white font-semibold text-sm sm:text-base h-12 sm:h-12 rounded-xl transition-transform">
         <MessageCircle className="w-5 h-5 shrink-0" />
         WhatsApp
@@ -683,7 +683,7 @@ const InterventionForm = () => {
   );
 
   return (
-    <Tabs value={activePage} onValueChange={(v) => setActivePage(v as "page1" | "page2")} className="space-y-4">
+    <Tabs value={activePage} onValueChange={(v) => setActivePage(v as "page1" | "page2")} className="space-y-4 pb-[calc(var(--keyboard-offset,0px)+env(safe-area-inset-bottom))]">
       <TabsList className="grid grid-cols-2 w-full sticky top-[60px] sm:top-[72px] z-30 h-12">
         <TabsTrigger value="page1" className="text-xs sm:text-sm gap-1.5">
           <MapPin className="w-4 h-4" /> {t("form.page1")}
@@ -694,7 +694,7 @@ const InterventionForm = () => {
       </TabsList>
 
       {/* ============ PAGE 1 — Sur le lieu ============ */}
-      <TabsContent value="page1" className="space-y-4 mt-0">
+      <TabsContent value="page1" className="space-y-4 mt-0 scroll-mt-24">
         {/* Date & Heure */}
         <div className="field-group space-y-3">
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
@@ -961,7 +961,7 @@ const InterventionForm = () => {
       </TabsContent>
 
       {/* ============ PAGE 2 — Transport hôpital ============ */}
-      <TabsContent value="page2" className="space-y-4 mt-0">
+      <TabsContent value="page2" className="space-y-4 mt-0 scroll-mt-24">
         {/* Compteur départ */}
         <div className="field-group space-y-3">
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
