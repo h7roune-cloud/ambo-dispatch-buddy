@@ -30,7 +30,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col items-center p-4 relative" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="app-shell bg-background flex flex-col items-center p-4 relative" dir={isRtl ? "rtl" : "ltr"}>
       {/* Watermark logo at the top */}
       <div className="w-full flex justify-center pt-6 mb-4">
         <img src={logo} alt="" width={120} height={120} className="opacity-15 select-none pointer-events-none" />

@@ -113,8 +113,14 @@
     overflow: auto;
   }
 
+  html {
+    --keyboard-offset: 0px;
+    --app-height: 100dvh;
+  }
+
   #root {
     min-height: 100%;
+    min-height: var(--app-height, 100dvh);
     overflow: auto;
   }
 
@@ -134,6 +140,22 @@
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+
+  body.keyboard-open {
+    overscroll-behavior-y: contain;
+  }
+
+  .app-shell {
+    min-height: var(--app-height, 100dvh);
+  }
+
+  input,
+  textarea,
+  select,
+  [role="combobox"] {
+    scroll-margin-top: 6rem;
+    scroll-margin-bottom: calc(var(--keyboard-offset, 0px) + 1.5rem);
   }
 
   /* Larger touch targets for all interactive elements */

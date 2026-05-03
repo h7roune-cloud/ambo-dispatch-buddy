@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -55,12 +55,120 @@ const InterventionForm = () => {
   const [compteurHopital, setCompteurHopital] = useState("");
   const [observationsHopital, setObservationsHopital] = useState("");
   const [activePage, setActivePage] = useState<"page1" | "page2">("page1");
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const photosInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const baselineViewportHeightRef = useRef(
+    typeof window !== "undefined" ? window.innerHeight : 0
+  );
+  const viewportWidthRef = useRef(typeof window !== "undefined" ? window.innerWidth : 0);
+  const focusScrollTimeoutRef = useRef<number | null>(null);
 
   const victimTypes = getVictimTypes(lang);
   const accidentTypes = getAccidentTypes(lang);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const getActiveField = () => {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLElement)) return null;
+
+      const tagName = active.tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) return active;
+      if (active.getAttribute("role") === "combobox") return active;
+      return null;
+    };
+
+    const syncKeyboardState = () => {
+      const visualViewport = window.visualViewport;
+      const activeField = getActiveField();
+      const viewportHeight = visualViewport?.height ?? window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const viewportOffsetTop = visualViewport?.offsetTop ?? 0;
+
+      if (viewportWidth !== viewportWidthRef.current) {
+        viewportWidthRef.current = viewportWidth;
+        baselineViewportHeightRef.current = viewportHeight;
+      }
+
+      if (!activeField) {
+        baselineViewportHeightRef.current = Math.max(
+          baselineViewportHeightRef.current,
+          viewportHeight
+        );
+        setIsKeyboardOpen(false);
+        document.body.classList.remove("keyboard-open");
+        document.documentElement.style.setProperty("--keyboard-offset", "0px");
+        return;
+      }
+
+      baselineViewportHeightRef.current = Math.max(
+        baselineViewportHeightRef.current,
+        viewportHeight
+      );
+
+      const keyboardOffset = Math.max(
+        0,
+        baselineViewportHeightRef.current - viewportHeight - viewportOffsetTop
+      );
+      const keyboardOpen = keyboardOffset > 120;
+
+      setIsKeyboardOpen(keyboardOpen);
+      document.body.classList.toggle("keyboard-open", keyboardOpen);
+      document.documentElement.style.setProperty(
+        "--keyboard-offset",
+        `${keyboardOpen ? keyboardOffset : 0}px`
+      );
+
+      if (focusScrollTimeoutRef.current) {
+        window.clearTimeout(focusScrollTimeoutRef.current);
+      }
+
+      focusScrollTimeoutRef.current = window.setTimeout(() => {
+        const currentField = getActiveField();
+        if (!currentField) return;
+
+        const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
+        const fieldRect = currentField.getBoundingClientRect();
+        const safeTop = 96;
+        const safeBottom = visibleHeight - 24;
+
+        if (fieldRect.top < safeTop || fieldRect.bottom > safeBottom) {
+          currentField.scrollIntoView({
+            behavior: "auto",
+            block: "center",
+            inline: "nearest",
+          });
+        }
+      }, keyboardOpen ? 90 : 0);
+    };
+
+    const handleFocusChange = () => window.requestAnimationFrame(syncKeyboardState);
+    const handleViewportChange = () => window.requestAnimationFrame(syncKeyboardState);
+
+    document.addEventListener("focusin", handleFocusChange);
+    document.addEventListener("focusout", handleFocusChange);
+    window.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange);
+
+    syncKeyboardState();
+
+    return () => {
+      if (focusScrollTimeoutRef.current) {
+        window.clearTimeout(focusScrollTimeoutRef.current);
+      }
+      document.body.classList.remove("keyboard-open");
+      document.documentElement.style.setProperty("--keyboard-offset", "0px");
+      document.removeEventListener("focusin", handleFocusChange);
+      document.removeEventListener("focusout", handleFocusChange);
+      window.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
+    };
+  }, []);
 
   const compressImage = (dataUrl: string, maxSize = 1200, quality = 0.7): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -562,7 +670,7 @@ const InterventionForm = () => {
   };
 
   const ActionBar = ({ page }: { page: "page1" | "page2" }) => (
-    <div className="sticky bottom-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 flex gap-2 sm:gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+    <div className={`sticky bottom-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 flex gap-2 sm:gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] transition-transform duration-200 ${isKeyboardOpen ? "pointer-events-none translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}>
       <Button onClick={() => shareViaWhatsApp(page)} className="flex-1 gap-1.5 sm:gap-2 bg-[#25D366] hover:bg-[#25D366]/90 active:scale-[0.97] text-white font-semibold text-sm sm:text-base h-12 sm:h-12 rounded-xl transition-transform">
         <MessageCircle className="w-5 h-5 shrink-0" />
         WhatsApp
@@ -575,7 +683,7 @@ const InterventionForm = () => {
   );
 
   return (
-    <Tabs value={activePage} onValueChange={(v) => setActivePage(v as "page1" | "page2")} className="space-y-4">
+    <Tabs value={activePage} onValueChange={(v) => setActivePage(v as "page1" | "page2")} className="space-y-4 pb-[calc(var(--keyboard-offset,0px)+env(safe-area-inset-bottom))]">
       <TabsList className="grid grid-cols-2 w-full sticky top-[60px] sm:top-[72px] z-30 h-12">
         <TabsTrigger value="page1" className="text-xs sm:text-sm gap-1.5">
           <MapPin className="w-4 h-4" /> {t("form.page1")}
@@ -586,7 +694,7 @@ const InterventionForm = () => {
       </TabsList>
 
       {/* ============ PAGE 1 — Sur le lieu ============ */}
-      <TabsContent value="page1" className="space-y-4 mt-0">
+      <TabsContent value="page1" className="space-y-4 mt-0 scroll-mt-24">
         {/* Date & Heure */}
         <div className="field-group space-y-3">
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
@@ -853,7 +961,7 @@ const InterventionForm = () => {
       </TabsContent>
 
       {/* ============ PAGE 2 — Transport hôpital ============ */}
-      <TabsContent value="page2" className="space-y-4 mt-0">
+      <TabsContent value="page2" className="space-y-4 mt-0 scroll-mt-24">
         {/* Compteur départ */}
         <div className="field-group space-y-3">
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
