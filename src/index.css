@@ -115,10 +115,12 @@
 
   html {
     --keyboard-offset: 0px;
+    --app-height: 100dvh;
   }
 
   #root {
     min-height: 100%;
+    min-height: var(--app-height, 100dvh);
     overflow: auto;
   }
 
@@ -142,6 +144,10 @@
 
   body.keyboard-open {
     overscroll-behavior-y: contain;
+  }
+
+  .app-shell {
+    min-height: var(--app-height, 100dvh);
   }
 
   input,
