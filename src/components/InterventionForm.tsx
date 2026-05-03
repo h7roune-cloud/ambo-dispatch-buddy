@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -55,12 +55,120 @@ const InterventionForm = () => {
   const [compteurHopital, setCompteurHopital] = useState("");
   const [observationsHopital, setObservationsHopital] = useState("");
   const [activePage, setActivePage] = useState<"page1" | "page2">("page1");
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const photosInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const baselineViewportHeightRef = useRef(
+    typeof window !== "undefined" ? window.innerHeight : 0
+  );
+  const viewportWidthRef = useRef(typeof window !== "undefined" ? window.innerWidth : 0);
+  const focusScrollTimeoutRef = useRef<number | null>(null);
 
   const victimTypes = getVictimTypes(lang);
   const accidentTypes = getAccidentTypes(lang);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const getActiveField = () => {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLElement)) return null;
+
+      const tagName = active.tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) return active;
+      if (active.getAttribute("role") === "combobox") return active;
+      return null;
+    };
+
+    const syncKeyboardState = () => {
+      const visualViewport = window.visualViewport;
+      const activeField = getActiveField();
+      const viewportHeight = visualViewport?.height ?? window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const viewportOffsetTop = visualViewport?.offsetTop ?? 0;
+
+      if (viewportWidth !== viewportWidthRef.current) {
+        viewportWidthRef.current = viewportWidth;
+        baselineViewportHeightRef.current = viewportHeight;
+      }
+
+      if (!activeField) {
+        baselineViewportHeightRef.current = Math.max(
+          baselineViewportHeightRef.current,
+          viewportHeight
+        );
+        setIsKeyboardOpen(false);
+        document.body.classList.remove("keyboard-open");
+        document.documentElement.style.setProperty("--keyboard-offset", "0px");
+        return;
+      }
+
+      baselineViewportHeightRef.current = Math.max(
+        baselineViewportHeightRef.current,
+        viewportHeight
+      );
+
+      const keyboardOffset = Math.max(
+        0,
+        baselineViewportHeightRef.current - viewportHeight - viewportOffsetTop
+      );
+      const keyboardOpen = keyboardOffset > 120;
+
+      setIsKeyboardOpen(keyboardOpen);
+      document.body.classList.toggle("keyboard-open", keyboardOpen);
+      document.documentElement.style.setProperty(
+        "--keyboard-offset",
+        `${keyboardOpen ? keyboardOffset : 0}px`
+      );
+
+      if (focusScrollTimeoutRef.current) {
+        window.clearTimeout(focusScrollTimeoutRef.current);
+      }
+
+      focusScrollTimeoutRef.current = window.setTimeout(() => {
+        const currentField = getActiveField();
+        if (!currentField) return;
+
+        const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
+        const fieldRect = currentField.getBoundingClientRect();
+        const safeTop = 96;
+        const safeBottom = visibleHeight - 24;
+
+        if (fieldRect.top < safeTop || fieldRect.bottom > safeBottom) {
+          currentField.scrollIntoView({
+            behavior: "auto",
+            block: "center",
+            inline: "nearest",
+          });
+        }
+      }, keyboardOpen ? 90 : 0);
+    };
+
+    const handleFocusChange = () => window.requestAnimationFrame(syncKeyboardState);
+    const handleViewportChange = () => window.requestAnimationFrame(syncKeyboardState);
+
+    document.addEventListener("focusin", handleFocusChange);
+    document.addEventListener("focusout", handleFocusChange);
+    window.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.visualViewport?.addEventListener("scroll", handleViewportChange);
+
+    syncKeyboardState();
+
+    return () => {
+      if (focusScrollTimeoutRef.current) {
+        window.clearTimeout(focusScrollTimeoutRef.current);
+      }
+      document.body.classList.remove("keyboard-open");
+      document.documentElement.style.setProperty("--keyboard-offset", "0px");
+      document.removeEventListener("focusin", handleFocusChange);
+      document.removeEventListener("focusout", handleFocusChange);
+      window.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("resize", handleViewportChange);
+      window.visualViewport?.removeEventListener("scroll", handleViewportChange);
+    };
+  }, []);
 
   const compressImage = (dataUrl: string, maxSize = 1200, quality = 0.7): Promise<string> =>
     new Promise((resolve, reject) => {
