@@ -64,6 +64,8 @@ const InterventionForm = () => {
   );
   const viewportWidthRef = useRef(typeof window !== "undefined" ? window.innerWidth : 0);
   const focusScrollTimeoutRef = useRef<number | null>(null);
+  const keyboardCloseTimeoutRef = useRef<number | null>(null);
+  const lastFocusedFieldRef = useRef<HTMLElement | null>(null);
 
   const victimTypes = getVictimTypes(lang);
   const accidentTypes = getAccidentTypes(lang);
@@ -71,19 +73,73 @@ const InterventionForm = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const getActiveField = () => {
-      const active = document.activeElement;
-      if (!(active instanceof HTMLElement)) return null;
+    const getFieldFromElement = (element: Element | null) => {
+      if (!(element instanceof HTMLElement)) return null;
 
-      const tagName = active.tagName;
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) return active;
-      if (active.getAttribute("role") === "combobox") return active;
+      const tagName = element.tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tagName)) return element;
+      if (element.getAttribute("role") === "combobox") return element;
       return null;
     };
 
-    const syncKeyboardState = () => {
+    const getActiveField = () => getFieldFromElement(document.activeElement);
+
+    const clearKeyboardCloseTimeout = () => {
+      if (keyboardCloseTimeoutRef.current) {
+        window.clearTimeout(keyboardCloseTimeoutRef.current);
+        keyboardCloseTimeoutRef.current = null;
+      }
+    };
+
+    const setKeyboardState = (open: boolean, keyboardOffset: number) => {
+      setIsKeyboardOpen((prev) => (prev === open ? prev : open));
+      document.body.classList.toggle("keyboard-open", open);
+      document.documentElement.style.setProperty(
+        "--keyboard-offset",
+        `${open ? Math.round(Math.max(0, keyboardOffset)) : 0}px`
+      );
+    };
+
+    const ensureFieldIsVisible = (field: HTMLElement, keyboardOffset: number) => {
+      if (focusScrollTimeoutRef.current) {
+        window.clearTimeout(focusScrollTimeoutRef.current);
+      }
+
+      focusScrollTimeoutRef.current = window.setTimeout(() => {
+        const currentField = getActiveField() ?? field;
+        if (!currentField) return;
+
+        const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
+        const fieldRect = currentField.getBoundingClientRect();
+        const safeTop = 92;
+        const safeBottom = visibleHeight - Math.max(20, Math.min(72, keyboardOffset * 0.25));
+
+        let scrollDelta = 0;
+
+        if (fieldRect.bottom > safeBottom) {
+          scrollDelta = fieldRect.bottom - safeBottom + 12;
+        } else if (fieldRect.top < safeTop) {
+          scrollDelta = fieldRect.top - safeTop - 12;
+        }
+
+        if (Math.abs(scrollDelta) > 4) {
+          window.scrollTo({
+            top: Math.max(0, window.scrollY + scrollDelta),
+            behavior: "auto",
+          });
+        }
+      }, 120);
+    };
+
+    const syncKeyboardState = ({
+      preferredField,
+      ensureVisible = false,
+    }: {
+      preferredField?: HTMLElement | null;
+      ensureVisible?: boolean;
+    } = {}) => {
       const visualViewport = window.visualViewport;
-      const activeField = getActiveField();
+      const activeField = preferredField ?? getActiveField();
       const viewportHeight = visualViewport?.height ?? window.innerHeight;
       const viewportWidth = window.innerWidth;
       const viewportOffsetTop = visualViewport?.offsetTop ?? 0;
@@ -93,20 +149,9 @@ const InterventionForm = () => {
         baselineViewportHeightRef.current = viewportHeight;
       }
 
-      if (!activeField) {
-        baselineViewportHeightRef.current = Math.max(
-          baselineViewportHeightRef.current,
-          viewportHeight
-        );
-        setIsKeyboardOpen(false);
-        document.body.classList.remove("keyboard-open");
-        document.documentElement.style.setProperty("--keyboard-offset", "0px");
-        return;
-      }
-
       baselineViewportHeightRef.current = Math.max(
         baselineViewportHeightRef.current,
-        viewportHeight
+        viewportHeight + viewportOffsetTop
       );
 
       const keyboardOffset = Math.max(
@@ -115,41 +160,53 @@ const InterventionForm = () => {
       );
       const keyboardOpen = keyboardOffset > 120;
 
-      setIsKeyboardOpen(keyboardOpen);
-      document.body.classList.toggle("keyboard-open", keyboardOpen);
-      document.documentElement.style.setProperty(
-        "--keyboard-offset",
-        `${keyboardOpen ? keyboardOffset : 0}px`
-      );
-
-      if (focusScrollTimeoutRef.current) {
-        window.clearTimeout(focusScrollTimeoutRef.current);
+      if (!activeField) {
+        if (!keyboardOpen) {
+          setKeyboardState(false, 0);
+        }
+        return;
       }
 
-      focusScrollTimeoutRef.current = window.setTimeout(() => {
-        const currentField = getActiveField();
-        if (!currentField) return;
+      setKeyboardState(keyboardOpen, keyboardOffset);
 
-        const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
-        const fieldRect = currentField.getBoundingClientRect();
-        const safeTop = 96;
-        const safeBottom = visibleHeight - 24;
-
-        if (fieldRect.top < safeTop || fieldRect.bottom > safeBottom) {
-          currentField.scrollIntoView({
-            behavior: "auto",
-            block: "center",
-            inline: "nearest",
-          });
-        }
-      }, keyboardOpen ? 90 : 0);
+      if (ensureVisible) {
+        ensureFieldIsVisible(activeField, keyboardOffset);
+      }
     };
 
-    const handleFocusChange = () => window.requestAnimationFrame(syncKeyboardState);
-    const handleViewportChange = () => window.requestAnimationFrame(syncKeyboardState);
+    const handleFocusIn = (event: FocusEvent) => {
+      const focusedField = getFieldFromElement(event.target as Element | null);
+      if (!focusedField) return;
 
-    document.addEventListener("focusin", handleFocusChange);
-    document.addEventListener("focusout", handleFocusChange);
+      lastFocusedFieldRef.current = focusedField;
+      clearKeyboardCloseTimeout();
+      window.requestAnimationFrame(() =>
+        syncKeyboardState({ preferredField: focusedField, ensureVisible: true })
+      );
+    };
+
+    const handleFocusOut = () => {
+      clearKeyboardCloseTimeout();
+      keyboardCloseTimeoutRef.current = window.setTimeout(() => {
+        const activeField = getActiveField();
+        if (activeField) {
+          lastFocusedFieldRef.current = activeField;
+          syncKeyboardState({ preferredField: activeField });
+          return;
+        }
+
+        syncKeyboardState();
+        lastFocusedFieldRef.current = null;
+      }, 180);
+    };
+
+    const handleViewportChange = () =>
+      window.requestAnimationFrame(() =>
+        syncKeyboardState({ preferredField: getActiveField() ?? lastFocusedFieldRef.current })
+      );
+
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
     window.addEventListener("resize", handleViewportChange);
     window.visualViewport?.addEventListener("resize", handleViewportChange);
     window.visualViewport?.addEventListener("scroll", handleViewportChange);
@@ -157,13 +214,14 @@ const InterventionForm = () => {
     syncKeyboardState();
 
     return () => {
+      clearKeyboardCloseTimeout();
       if (focusScrollTimeoutRef.current) {
         window.clearTimeout(focusScrollTimeoutRef.current);
       }
       document.body.classList.remove("keyboard-open");
       document.documentElement.style.setProperty("--keyboard-offset", "0px");
-      document.removeEventListener("focusin", handleFocusChange);
-      document.removeEventListener("focusout", handleFocusChange);
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
       window.removeEventListener("resize", handleViewportChange);
       window.visualViewport?.removeEventListener("resize", handleViewportChange);
       window.visualViewport?.removeEventListener("scroll", handleViewportChange);
@@ -678,8 +736,11 @@ const InterventionForm = () => {
     }
   };
 
-  const ActionBar = ({ page }: { page: "page1" | "page2" }) => (
-    <div className={`sticky bottom-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 flex gap-2 sm:gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] transition-transform duration-200 ${isKeyboardOpen ? "pointer-events-none translate-y-full opacity-0" : "translate-y-0 opacity-100"}`}>
+  const ActionBar = ({ page }: { page: "page1" | "page2" }) => {
+    if (isKeyboardOpen) return null;
+
+    return (
+    <div className="sticky bottom-0 z-40 bg-background/95 backdrop-blur-sm border-t border-border -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 flex gap-2 sm:gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
       <Button onClick={() => shareViaWhatsApp(page)} className="flex-1 gap-1.5 sm:gap-2 bg-[#25D366] hover:bg-[#25D366]/90 active:scale-[0.97] text-white font-semibold text-sm sm:text-base h-12 sm:h-12 rounded-xl transition-transform">
         <MessageCircle className="w-5 h-5 shrink-0" />
         WhatsApp
@@ -689,11 +750,12 @@ const InterventionForm = () => {
         PDF
       </Button>
     </div>
-  );
+    );
+  };
 
   return (
     <Tabs value={activePage} onValueChange={(v) => setActivePage(v as "page1" | "page2")} className="space-y-4 pb-[calc(var(--keyboard-offset,0px)+env(safe-area-inset-bottom))]">
-      <TabsList className="grid grid-cols-2 w-full sticky top-[60px] sm:top-[72px] z-30 h-12">
+      <TabsList className={`grid grid-cols-2 w-full z-30 h-12 ${isKeyboardOpen ? "relative top-0" : "sticky top-[60px] sm:top-[72px]"}`}>
         <TabsTrigger value="page1" className="text-xs sm:text-sm gap-1.5">
           <MapPin className="w-4 h-4" /> {t("form.page1")}
         </TabsTrigger>
