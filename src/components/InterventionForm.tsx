@@ -616,53 +616,62 @@ const InterventionForm = () => {
       const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
-      const photoFiles: File[] = [];
-      photosIntervention.forEach((p, i) => {
-        const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
-        if (f) photoFiles.push(f);
-      });
-      victimes.forEach((v, i) => {
-        if (v.carteIdentite) {
-          const f = dataUrlToFile(v.carteIdentite, `carte-identite-victime-${i + 1}.jpg`);
-          if (f) photoFiles.push(f);
-        }
-      });
-
-      const allFiles = [pdfFile, ...photoFiles];
       toast.dismiss(loadingId);
 
-      // Try native share API first (works on most mobile browsers)
-      if (navigator.share && navigator.canShare?.({ files: allFiles })) {
-        try {
-          await navigator.share({
-            title: t("header.subtitle"),
-            text: buildReport(page),
-            files: allFiles,
-          });
-          toast.success(t("toast.pdfShared"));
-          return;
-        } catch (shareErr: any) {
-          if (shareErr.name === "AbortError") return;
-          // Fall through to download + WhatsApp fallback
+      // Strategy 1: Try sharing just the PDF file (images are already embedded in PDF)
+      if (navigator.share) {
+        const shareData: ShareData = {
+          title: t("header.subtitle"),
+          files: [pdfFile],
+        };
+        // Check if device supports file sharing
+        if (navigator.canShare?.(shareData)) {
+          try {
+            await navigator.share(shareData);
+            toast.success(t("toast.pdfShared"));
+            return;
+          } catch (shareErr: any) {
+            if (shareErr.name === "AbortError") return;
+            // Fall through to fallback
+          }
         }
       }
 
-      // Fallback: download PDF + each photo, then open WhatsApp with text
-      downloadFile(blob, fileName);
-      photoFiles.forEach((f, i) => {
-        setTimeout(() => downloadFile(f, f.name), (i + 1) * 300);
-      });
-      
-      setTimeout(() => {
-        const encoded = encodeURIComponent(buildReport(page));
+      // Strategy 2: Create a blob URL and try to share via intent
+      // This works on Android WebViews where navigator.share may not support files
+      try {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Give time for download to start, then open WhatsApp
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Open WhatsApp with instruction to attach the downloaded PDF
+        const report = buildReport(page);
+        const message = `📎 ${t("toast.pdfShared") || "PDF téléchargé"}\n\n${report}`;
+        const encoded = encodeURIComponent(message);
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
-      }, (photoFiles.length + 1) * 300 + 200);
-
-      toast.success(t("toast.pdfShared"));
+        
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        toast.success(t("toast.pdfShared"));
+      } catch {
+        // Strategy 3: Last resort - download and notify
+        downloadFile(blob, fileName);
+        setTimeout(() => {
+          const encoded = encodeURIComponent(buildReport(page));
+          window.open(`https://wa.me/?text=${encoded}`, "_blank");
+        }, 1000);
+        toast.success(t("toast.pdfShared"));
+      }
     } catch (err: any) {
       toast.dismiss(loadingId);
       console.error("PDF share error:", err);
-      // Last resort: just open WhatsApp with text
       const encoded = encodeURIComponent(buildReport(page));
       window.open(`https://wa.me/?text=${encoded}`, "_blank");
       toast.success(t("toast.whatsappOpen"));
