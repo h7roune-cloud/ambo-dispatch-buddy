@@ -688,73 +688,122 @@ const InterventionForm = () => {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
+  const buildShareFiles = async (page: "page1" | "page2") => {
+    const blob = await generatePDF(page);
+    const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
+    const pdfFile = new File([blob], fileName, { type: "application/pdf" });
+
+    const imageFiles: File[] = [];
+
+    photosIntervention.forEach((photo, index) => {
+      const file = dataUrlToFile(photo.dataUrl, `intervention-photo-${index + 1}.jpg`);
+      if (file) imageFiles.push(file);
+    });
+
+    victimes.forEach((victime, index) => {
+      if (!victime.carteIdentite) return;
+      const file = dataUrlToFile(victime.carteIdentite, `carte-identite-victime-${index + 1}.jpg`);
+      if (file) imageFiles.push(file);
+    });
+
+    return {
+      blob,
+      fileName,
+      pdfFile,
+      imageFiles,
+      allFiles: [pdfFile, ...imageFiles],
+    };
+  };
+
+  const shareNativeFiles = async (files: File[], page: "page1" | "page2") => {
+    if (!navigator.share || files.length === 0) {
+      return false;
+    }
+
+    const payloads: ShareData[] = [
+      { files, title: t("header.subtitle") },
+      { files },
+      { files, title: t("header.subtitle"), text: buildReport(page) },
+    ];
+
+    let lastError: unknown = null;
+
+    for (const payload of payloads) {
+      try {
+        const canShareFiles = typeof navigator.canShare === "function"
+          ? navigator.canShare({ files: payload.files })
+          : true;
+
+        if (!canShareFiles) {
+          continue;
+        }
+
+        await navigator.share(payload);
+        return true;
+      } catch (error: any) {
+        if (error?.name === "AbortError") {
+          throw error;
+        }
+
+        lastError = error;
+      }
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
+
+    return false;
+  };
+
+  const downloadFiles = (files: File[]) => {
+    files.forEach((file, index) => {
+      window.setTimeout(() => downloadFile(file, file.name), index * 180);
+    });
+  };
+
   const sharePDF = async (page: "page1" | "page2") => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
-      const blob = await generatePDF(page);
-      const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
-      const pdfFile = new File([blob], fileName, { type: "application/pdf" });
+      const { allFiles, pdfFile } = await buildShareFiles(page);
 
       toast.dismiss(loadingId);
 
-      // Strategy 1: Try sharing just the PDF file (images are already embedded in PDF)
-      if (navigator.share) {
-        const shareData: ShareData = {
-          title: t("header.subtitle"),
-          files: [pdfFile],
-        };
-        // Check if device supports file sharing
-        if (navigator.canShare?.(shareData)) {
-          try {
-            await navigator.share(shareData);
-            toast.success(t("toast.pdfShared"));
-            return;
-          } catch (shareErr: any) {
-            if (shareErr.name === "AbortError") return;
-            // Fall through to fallback
-          }
+      const sharedAllFiles = await shareNativeFiles(allFiles, page).catch((error: any) => {
+        if (error?.name === "AbortError") {
+          throw error;
         }
+
+        return false;
+      });
+
+      if (sharedAllFiles) {
+        toast.success(t("toast.pdfShared"));
+        return;
       }
 
-      // Strategy 2: Create a blob URL and try to share via intent
-      // This works on Android WebViews where navigator.share may not support files
-      try {
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = fileName;
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        // Give time for download to start, then open WhatsApp
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Open WhatsApp with instruction to attach the downloaded PDF
-        const report = buildReport(page);
-        const message = `📎 ${t("toast.pdfShared") || "PDF téléchargé"}\n\n${report}`;
-        const encoded = encodeURIComponent(message);
-        window.open(`https://wa.me/?text=${encoded}`, "_blank");
-        
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      const sharedPdfOnly = await shareNativeFiles([pdfFile], page).catch((error: any) => {
+        if (error?.name === "AbortError") {
+          throw error;
+        }
+
+        return false;
+      });
+
+      if (sharedPdfOnly) {
         toast.success(t("toast.pdfShared"));
-      } catch {
-        // Strategy 3: Last resort - download and notify
-        downloadFile(blob, fileName);
-        setTimeout(() => {
-          const encoded = encodeURIComponent(buildReport(page));
-          window.open(`https://wa.me/?text=${encoded}`, "_blank");
-        }, 1000);
-        toast.success(t("toast.pdfShared"));
+        return;
       }
+
+      downloadFiles(allFiles);
+      toast.success(t("toast.pdfDownloaded"));
     } catch (err: any) {
       toast.dismiss(loadingId);
+      if (err?.name === "AbortError") return;
+
       console.error("PDF share error:", err);
-      const encoded = encodeURIComponent(buildReport(page));
-      window.open(`https://wa.me/?text=${encoded}`, "_blank");
-      toast.success(t("toast.whatsappOpen"));
+      toast.error(t("toast.pdfError"));
     }
   };
 
