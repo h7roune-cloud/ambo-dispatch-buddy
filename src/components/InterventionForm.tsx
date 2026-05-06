@@ -667,9 +667,9 @@ const InterventionForm = () => {
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
         toast.success(t("toast.whatsappOpen"));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.dismiss(loadingId);
-      if (err.name !== "AbortError") {
+      if (getErrorName(err) !== "AbortError") {
         const encoded = encodeURIComponent(buildReport(page));
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
         toast.success(t("toast.whatsappOpen"));
@@ -740,8 +740,8 @@ const InterventionForm = () => {
 
         await navigator.share(payload);
         return true;
-      } catch (error: any) {
-        if (error?.name === "AbortError") {
+      } catch (error: unknown) {
+        if (getErrorName(error) === "AbortError") {
           throw error;
         }
 
@@ -778,8 +778,8 @@ const InterventionForm = () => {
 
       toast.dismiss(loadingId);
 
-      const sharedAllFiles = await shareNativeFiles(allFiles, page).catch((error: any) => {
-        if (error?.name === "AbortError") {
+      const sharedAllFiles = await shareNativeFiles(allFiles, page).catch((error: unknown) => {
+        if (getErrorName(error) === "AbortError") {
           throw error;
         }
 
@@ -791,8 +791,8 @@ const InterventionForm = () => {
         return;
       }
 
-      const sharedPdfOnly = await shareNativeFiles([pdfFile], page).catch((error: any) => {
-        if (error?.name === "AbortError") {
+      const sharedPdfOnly = await shareNativeFiles([pdfFile], page).catch((error: unknown) => {
+        if (getErrorName(error) === "AbortError") {
           throw error;
         }
 
