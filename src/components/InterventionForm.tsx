@@ -28,8 +28,18 @@ interface PhotoIntervention {
 
 type PdfImageFormat = "JPEG" | "PNG" | "WEBP";
 
+type ScrollStrategy = "auto" | "scrollIntoView" | "scrollTo";
+
+const getScrollStrategy = (): ScrollStrategy => {
+  const saved = localStorage.getItem("pc_scroll_strategy");
+  if (saved === "scrollIntoView" || saved === "scrollTo") return saved;
+  return "auto";
+};
+
 const InterventionForm = () => {
   const { t, lang, isRtl } = useLanguage();
+
+  const [scrollStrategy, setScrollStrategy] = useState<ScrollStrategy>(getScrollStrategy);
 
   const [heureArrivee, setHeureArrivee] = useState(
     new Date().toTimeString().slice(0, 5)
