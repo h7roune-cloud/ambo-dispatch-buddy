@@ -1112,6 +1112,43 @@ const InterventionForm = () => {
         <ActionBar page="page2" />
       </TabsContent>
     </Tabs>
+
+    {/* Scroll Strategy Setting */}
+    <div className="mt-6 p-3 rounded-lg border border-border bg-muted/30">
+      <Label className="text-xs font-medium text-muted-foreground mb-2 block">
+        ⚙️ {lang === "ar" ? "استراتيجية التمرير (لوحة المفاتيح)" : "Stratégie de scroll (clavier)"}
+      </Label>
+      <div className="flex gap-2 flex-wrap">
+        {(["auto", "scrollIntoView", "scrollTo"] as ScrollStrategy[]).map((strategy) => (
+          <Button
+            key={strategy}
+            type="button"
+            size="sm"
+            variant={scrollStrategy === strategy ? "default" : "outline"}
+            className="text-xs h-8"
+            onClick={() => {
+              setScrollStrategy(strategy);
+              localStorage.setItem("pc_scroll_strategy", strategy);
+              toast.success(
+                lang === "ar"
+                  ? `تم تغيير الاستراتيجية: ${strategy}`
+                  : `Stratégie changée : ${strategy}`
+              );
+            }}
+          >
+            {strategy === "auto"
+              ? lang === "ar" ? "تلقائي" : "Auto"
+              : strategy}
+          </Button>
+        ))}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1.5">
+        {lang === "ar"
+          ? "إذا كانت هناك مشاكل في التمرير عند فتح لوحة المفاتيح، جرب استراتيجية أخرى."
+          : "Si le défilement pose problème avec le clavier, essayez une autre stratégie."}
+      </p>
+    </div>
+    </>
   );
 };
 
