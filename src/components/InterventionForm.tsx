@@ -110,6 +110,13 @@ const InterventionForm = () => {
       );
     };
 
+    const shouldUseScrollIntoView = (): boolean => {
+      if (scrollStrategy === "scrollIntoView") return true;
+      if (scrollStrategy === "scrollTo") return false;
+      // Auto-detect: use scrollIntoView if visualViewport API is missing (older WebViews)
+      return !window.visualViewport;
+    };
+
     const ensureFieldIsVisible = (field: HTMLElement, keyboardOffset: number) => {
       if (focusScrollTimeoutRef.current) {
         window.clearTimeout(focusScrollTimeoutRef.current);
@@ -118,6 +125,11 @@ const InterventionForm = () => {
       focusScrollTimeoutRef.current = window.setTimeout(() => {
         const currentField = getActiveField() ?? field;
         if (!currentField) return;
+
+        if (shouldUseScrollIntoView()) {
+          currentField.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
 
         const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
         const fieldRect = currentField.getBoundingClientRect();
