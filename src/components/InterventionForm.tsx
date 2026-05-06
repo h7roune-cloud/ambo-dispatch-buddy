@@ -248,7 +248,7 @@ const InterventionForm = () => {
       window.visualViewport?.removeEventListener("resize", handleViewportChange);
       window.visualViewport?.removeEventListener("scroll", handleViewportChange);
     };
-  }, []);
+  }, [scrollStrategy]);
 
   const compressImage = (dataUrl: string, maxSize = 1200, quality = 0.7): Promise<string> =>
     new Promise((resolve, reject) => {
