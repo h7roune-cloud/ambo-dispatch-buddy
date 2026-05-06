@@ -28,8 +28,18 @@ interface PhotoIntervention {
 
 type PdfImageFormat = "JPEG" | "PNG" | "WEBP";
 
+type ScrollStrategy = "auto" | "scrollIntoView" | "scrollTo";
+
+const getScrollStrategy = (): ScrollStrategy => {
+  const saved = localStorage.getItem("pc_scroll_strategy");
+  if (saved === "scrollIntoView" || saved === "scrollTo") return saved;
+  return "auto";
+};
+
 const InterventionForm = () => {
   const { t, lang, isRtl } = useLanguage();
+
+  const [scrollStrategy, setScrollStrategy] = useState<ScrollStrategy>(getScrollStrategy);
 
   const [heureArrivee, setHeureArrivee] = useState(
     new Date().toTimeString().slice(0, 5)
@@ -100,6 +110,13 @@ const InterventionForm = () => {
       );
     };
 
+    const shouldUseScrollIntoView = (): boolean => {
+      if (scrollStrategy === "scrollIntoView") return true;
+      if (scrollStrategy === "scrollTo") return false;
+      // Auto-detect: use scrollIntoView if visualViewport API is missing (older WebViews)
+      return !window.visualViewport;
+    };
+
     const ensureFieldIsVisible = (field: HTMLElement, keyboardOffset: number) => {
       if (focusScrollTimeoutRef.current) {
         window.clearTimeout(focusScrollTimeoutRef.current);
@@ -108,6 +125,11 @@ const InterventionForm = () => {
       focusScrollTimeoutRef.current = window.setTimeout(() => {
         const currentField = getActiveField() ?? field;
         if (!currentField) return;
+
+        if (shouldUseScrollIntoView()) {
+          currentField.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
 
         const visibleHeight = window.visualViewport?.height ?? window.innerHeight;
         const fieldRect = currentField.getBoundingClientRect();
@@ -226,7 +248,7 @@ const InterventionForm = () => {
       window.visualViewport?.removeEventListener("resize", handleViewportChange);
       window.visualViewport?.removeEventListener("scroll", handleViewportChange);
     };
-  }, []);
+  }, [scrollStrategy]);
 
   const compressImage = (dataUrl: string, maxSize = 1200, quality = 0.7): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -754,6 +776,7 @@ const InterventionForm = () => {
   };
 
   return (
+    <>
     <Tabs value={activePage} onValueChange={(v) => setActivePage(v as "page1" | "page2")} className="space-y-4 pb-[calc(var(--keyboard-offset,0px)+env(safe-area-inset-bottom))]">
       <TabsList className={`grid grid-cols-2 w-full z-30 h-12 ${isKeyboardOpen ? "relative top-0" : "sticky top-[60px] sm:top-[72px]"}`}>
         <TabsTrigger value="page1" className="text-xs sm:text-sm gap-1.5">
@@ -1090,6 +1113,43 @@ const InterventionForm = () => {
         <ActionBar page="page2" />
       </TabsContent>
     </Tabs>
+
+    {/* Scroll Strategy Setting */}
+    <div className="mt-6 p-3 rounded-lg border border-border bg-muted/30">
+      <Label className="text-xs font-medium text-muted-foreground mb-2 block">
+        ⚙️ {lang === "ar" ? "استراتيجية التمرير (لوحة المفاتيح)" : "Stratégie de scroll (clavier)"}
+      </Label>
+      <div className="flex gap-2 flex-wrap">
+        {(["auto", "scrollIntoView", "scrollTo"] as ScrollStrategy[]).map((strategy) => (
+          <Button
+            key={strategy}
+            type="button"
+            size="sm"
+            variant={scrollStrategy === strategy ? "default" : "outline"}
+            className="text-xs h-8"
+            onClick={() => {
+              setScrollStrategy(strategy);
+              localStorage.setItem("pc_scroll_strategy", strategy);
+              toast.success(
+                lang === "ar"
+                  ? `تم تغيير الاستراتيجية: ${strategy}`
+                  : `Stratégie changée : ${strategy}`
+              );
+            }}
+          >
+            {strategy === "auto"
+              ? lang === "ar" ? "تلقائي" : "Auto"
+              : strategy}
+          </Button>
+        ))}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-1.5">
+        {lang === "ar"
+          ? "إذا كانت هناك مشاكل في التمرير عند فتح لوحة المفاتيح، جرب استراتيجية أخرى."
+          : "Si le défilement pose problème avec le clavier, essayez une autre stratégie."}
+      </p>
+    </div>
+    </>
   );
 };
 
