@@ -762,6 +762,14 @@ const InterventionForm = () => {
     });
   };
 
+  const getErrorName = (error: unknown) => {
+    if (typeof error === "object" && error !== null && "name" in error) {
+      return String((error as { name?: unknown }).name ?? "");
+    }
+
+    return "";
+  };
+
   const sharePDF = async (page: "page1" | "page2") => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
@@ -798,9 +806,9 @@ const InterventionForm = () => {
 
       downloadFiles(allFiles);
       toast.success(t("toast.pdfDownloaded"));
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.dismiss(loadingId);
-      if (err?.name === "AbortError") return;
+      if (getErrorName(err) === "AbortError") return;
 
       console.error("PDF share error:", err);
       toast.error(t("toast.pdfError"));
