@@ -776,6 +776,7 @@ const InterventionForm = () => {
   };
 
   return (
+    <>
     <Tabs value={activePage} onValueChange={(v) => setActivePage(v as "page1" | "page2")} className="space-y-4 pb-[calc(var(--keyboard-offset,0px)+env(safe-area-inset-bottom))]">
       <TabsList className={`grid grid-cols-2 w-full z-30 h-12 ${isKeyboardOpen ? "relative top-0" : "sticky top-[60px] sm:top-[72px]"}`}>
         <TabsTrigger value="page1" className="text-xs sm:text-sm gap-1.5">
