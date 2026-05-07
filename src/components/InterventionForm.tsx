@@ -789,28 +789,14 @@ const InterventionForm = () => {
 
   const buildShareFiles = async (page: "page1" | "page2") => {
     const blob = await generatePDF(page);
-    const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
+    const fileName = getPdfFileName(page);
     const pdfFile = new File([blob], fileName, { type: "application/pdf" });
-
-    const imageFiles: File[] = [];
-
-    photosIntervention.forEach((photo, index) => {
-      const file = dataUrlToFile(photo.dataUrl, `intervention-photo-${index + 1}.jpg`);
-      if (file) imageFiles.push(file);
-    });
-
-    victimes.forEach((victime, index) => {
-      if (!victime.carteIdentite) return;
-      const file = dataUrlToFile(victime.carteIdentite, `carte-identite-victime-${index + 1}.jpg`);
-      if (file) imageFiles.push(file);
-    });
 
     return {
       blob,
       fileName,
       pdfFile,
-      imageFiles,
-      allFiles: [pdfFile, ...imageFiles],
+      allFiles: [pdfFile],
     };
   };
 
@@ -855,6 +841,39 @@ const InterventionForm = () => {
     return false;
   };
 
+  const sharePdfThroughCapacitor = async (page: "page1" | "page2") => {
+    const hasPermission = await ensureAndroidStoragePermission();
+    if (!hasPermission) {
+      throw new Error("storage-permission-denied");
+    }
+
+    const doc = await buildPdfDocument(page);
+    const fileName = getPdfFileName(page);
+    const pdfDataUri = doc.output("datauristring");
+    const pdfBase64 = extractBase64Payload(pdfDataUri);
+
+    const writeResult = await Filesystem.writeFile({
+      path: fileName,
+      data: pdfBase64,
+      directory: Directory.Cache,
+      recursive: true,
+    });
+
+    const fileUri = writeResult.uri ?? (await Filesystem.getUri({
+      path: fileName,
+      directory: Directory.Cache,
+    })).uri;
+
+    await Share.share({
+      title: t("header.subtitle"),
+      text: buildReport(page),
+      url: fileUri,
+      dialogTitle: t("header.subtitle"),
+    });
+
+    return fileUri;
+  };
+
   const downloadFiles = (files: File[]) => {
     files.forEach((file, index) => {
       window.setTimeout(() => downloadFile(file, file.name), index * 180);
@@ -873,6 +892,13 @@ const InterventionForm = () => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
+      if (isNativeAndroid) {
+        await sharePdfThroughCapacitor(page);
+        toast.dismiss(loadingId);
+        toast.success(t("toast.pdfShared"));
+        return;
+      }
+
       const { allFiles, pdfFile } = await buildShareFiles(page);
 
       toast.dismiss(loadingId);
