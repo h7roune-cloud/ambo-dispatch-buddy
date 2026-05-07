@@ -735,12 +735,18 @@ const InterventionForm = () => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
+      if (isNativeAndroid) {
+        await sharePdfThroughCapacitor(page);
+        toast.dismiss(loadingId);
+        toast.success(t("toast.shared"));
+        return;
+      }
+
       const blob = await generatePDF(page);
       const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
       const photoFiles: File[] = [];
-      // Always include photos (page1 sends its own, page2 sends both pages' data)
       photosIntervention.forEach((p, i) => {
         const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
         if (f) photoFiles.push(f);
@@ -769,6 +775,7 @@ const InterventionForm = () => {
     } catch (err: unknown) {
       toast.dismiss(loadingId);
       if (getErrorName(err) !== "AbortError") {
+        console.error("WhatsApp share error:", err);
         const encoded = encodeURIComponent(buildReport(page));
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
         toast.success(t("toast.whatsappOpen"));
@@ -847,11 +854,16 @@ const InterventionForm = () => {
       throw new Error("storage-permission-denied");
     }
 
+    console.log("[PDF-Capacitor] Building PDF document...");
     const doc = await buildPdfDocument(page);
     const fileName = getPdfFileName(page);
-    const pdfDataUri = doc.output("datauristring");
-    const pdfBase64 = extractBase64Payload(pdfDataUri);
+    const pdfBase64 = doc.output("datauristring").split(",")[1];
 
+    if (!pdfBase64 || pdfBase64.length < 100) {
+      throw new Error("PDF base64 output is empty or too small");
+    }
+
+    console.log("[PDF-Capacitor] Writing file:", fileName, "base64 length:", pdfBase64.length);
     const writeResult = await Filesystem.writeFile({
       path: fileName,
       data: pdfBase64,
@@ -859,10 +871,16 @@ const InterventionForm = () => {
       recursive: true,
     });
 
-    const fileUri = writeResult.uri ?? (await Filesystem.getUri({
-      path: fileName,
-      directory: Directory.Cache,
-    })).uri;
+    let fileUri = writeResult.uri;
+    if (!fileUri) {
+      const uriResult = await Filesystem.getUri({
+        path: fileName,
+        directory: Directory.Cache,
+      });
+      fileUri = uriResult.uri;
+    }
+
+    console.log("[PDF-Capacitor] File URI:", fileUri);
 
     await Share.share({
       title: t("header.subtitle"),
@@ -892,6 +910,7 @@ const InterventionForm = () => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
+      console.log("[PDF-Share] isNativeAndroid:", isNativeAndroid, "platform:", Capacitor.getPlatform(), "isNative:", Capacitor.isNativePlatform());
       if (isNativeAndroid) {
         await sharePdfThroughCapacitor(page);
         toast.dismiss(loadingId);
