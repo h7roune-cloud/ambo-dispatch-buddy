@@ -735,12 +735,18 @@ const InterventionForm = () => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
+      if (isNativeAndroid) {
+        await sharePdfThroughCapacitor(page);
+        toast.dismiss(loadingId);
+        toast.success(t("toast.shared"));
+        return;
+      }
+
       const blob = await generatePDF(page);
       const fileName = `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
       const pdfFile = new File([blob], fileName, { type: "application/pdf" });
 
       const photoFiles: File[] = [];
-      // Always include photos (page1 sends its own, page2 sends both pages' data)
       photosIntervention.forEach((p, i) => {
         const f = dataUrlToFile(p.dataUrl, `intervention-photo-${i + 1}.jpg`);
         if (f) photoFiles.push(f);
@@ -769,6 +775,7 @@ const InterventionForm = () => {
     } catch (err: unknown) {
       toast.dismiss(loadingId);
       if (getErrorName(err) !== "AbortError") {
+        console.error("WhatsApp share error:", err);
         const encoded = encodeURIComponent(buildReport(page));
         window.open(`https://wa.me/?text=${encoded}`, "_blank");
         toast.success(t("toast.whatsappOpen"));
