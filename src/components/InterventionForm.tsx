@@ -854,11 +854,16 @@ const InterventionForm = () => {
       throw new Error("storage-permission-denied");
     }
 
+    console.log("[PDF-Capacitor] Building PDF document...");
     const doc = await buildPdfDocument(page);
     const fileName = getPdfFileName(page);
-    const pdfDataUri = doc.output("datauristring");
-    const pdfBase64 = extractBase64Payload(pdfDataUri);
+    const pdfBase64 = doc.output("datauristring").split(",")[1];
 
+    if (!pdfBase64 || pdfBase64.length < 100) {
+      throw new Error("PDF base64 output is empty or too small");
+    }
+
+    console.log("[PDF-Capacitor] Writing file:", fileName, "base64 length:", pdfBase64.length);
     const writeResult = await Filesystem.writeFile({
       path: fileName,
       data: pdfBase64,
@@ -866,10 +871,16 @@ const InterventionForm = () => {
       recursive: true,
     });
 
-    const fileUri = writeResult.uri ?? (await Filesystem.getUri({
-      path: fileName,
-      directory: Directory.Cache,
-    })).uri;
+    let fileUri = writeResult.uri;
+    if (!fileUri) {
+      const uriResult = await Filesystem.getUri({
+        path: fileName,
+        directory: Directory.Cache,
+      });
+      fileUri = uriResult.uri;
+    }
+
+    console.log("[PDF-Capacitor] File URI:", fileUri);
 
     await Share.share({
       title: t("header.subtitle"),
