@@ -910,6 +910,7 @@ const InterventionForm = () => {
     if (!validateRequiredFields(page)) return;
     const loadingId = toast.loading(t("toast.preparing") || "...");
     try {
+      console.log("[PDF-Share] isNativeAndroid:", isNativeAndroid, "platform:", Capacitor.getPlatform(), "isNative:", Capacitor.isNativePlatform());
       if (isNativeAndroid) {
         await sharePdfThroughCapacitor(page);
         toast.dismiss(loadingId);
