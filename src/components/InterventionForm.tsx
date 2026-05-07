@@ -8,6 +8,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, MapPin, Users, UserCheck, Building2, Shield, Camera, Plus, Trash2, FileText, MessageCircle, Hospital } from "lucide-react";
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
+import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Share } from "@capacitor/share";
 import jsPDF from "jspdf";
 import { useLanguage, getVictimTypes, getAccidentTypes } from "@/contexts/LanguageContext";
 
@@ -412,6 +415,95 @@ const InterventionForm = () => {
       image.src = dataUrl;
     });
 
+  const isNativeAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+
+  const getPdfFileName = (page: "page1" | "page2") =>
+    `intervention_${page}_${dateIntervention}_${heureArrivee.replace(":", "h")}.pdf`;
+
+  const blobToDataUrl = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result ?? ""));
+      reader.onerror = () => reject(new Error("Base64 conversion failed"));
+      reader.readAsDataURL(blob);
+    });
+
+  const extractBase64Payload = (value: string) => value.split(",").slice(1).join(",") || value;
+
+  const getImageMimeType = (source: string) => {
+    const dataUrlMime = source.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/i)?.[1];
+    if (dataUrlMime) return dataUrlMime;
+    if (/\.png($|\?)/i.test(source)) return "image/png";
+    if (/\.webp($|\?)/i.test(source)) return "image/webp";
+    return "image/jpeg";
+  };
+
+  const ensureBase64Image = async (source: string) => {
+    if (!source) {
+      throw new Error("Empty image source");
+    }
+
+    if (/^data:image\//i.test(source)) {
+      return source;
+    }
+
+    if (isNativeAndroid) {
+      try {
+        const fileResult = await Filesystem.readFile({ path: source });
+        const rawData = typeof fileResult.data === "string" ? fileResult.data : "";
+
+        if (rawData) {
+          return rawData.startsWith("data:")
+            ? rawData
+            : `data:${getImageMimeType(source)};base64,${rawData}`;
+        }
+      } catch (error) {
+        console.warn("Failed to read native image path for PDF export:", source, error);
+      }
+    }
+
+    const response = await fetch(source);
+    if (!response.ok) {
+      throw new Error(`Image fetch failed: ${response.status}`);
+    }
+
+    return blobToDataUrl(await response.blob());
+  };
+
+  const preparePdfImages = async () => {
+    const [victimIdImages, interventionImages] = await Promise.all([
+      Promise.all(
+        victimes.map((victime) =>
+          victime.carteIdentite ? ensureBase64Image(victime.carteIdentite).catch(() => null) : Promise.resolve(null)
+        )
+      ),
+      Promise.all(
+        photosIntervention.map((photo) => ensureBase64Image(photo.dataUrl).catch(() => null))
+      ),
+    ]);
+
+    return { victimIdImages, interventionImages };
+  };
+
+  const hasStoragePermission = (state?: string) => state === "granted" || state === "limited";
+
+  const ensureAndroidStoragePermission = async () => {
+    if (!isNativeAndroid) return true;
+
+    try {
+      const permissionStatus = await Filesystem.checkPermissions();
+
+      if (hasStoragePermission(permissionStatus.publicStorage)) {
+        return true;
+      }
+
+      const requestedPermission = await Filesystem.requestPermissions();
+      return hasStoragePermission(requestedPermission.publicStorage);
+    } catch {
+      return true;
+    }
+  };
+
   const addWatermark = (doc: jsPDF) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -452,18 +544,19 @@ const InterventionForm = () => {
     }
   };
 
-  const generatePDF = async (page: "page1" | "page2" = "page1"): Promise<Blob> => {
+  const buildPdfDocument = async (page: "page1" | "page2" = "page1"): Promise<jsPDF> => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
+    const { victimIdImages, interventionImages } = await preparePdfImages();
 
     // Pre-load all image dimensions in parallel
     const victimDims = (page === "page1" || page === "page2")
-      ? await Promise.all(victimes.map((v) => (v.carteIdentite ? getImageDimensions(v.carteIdentite).catch(() => null) : Promise.resolve(null))))
+      ? await Promise.all(victimIdImages.map((image) => (image ? getImageDimensions(image).catch(() => null) : Promise.resolve(null))))
       : [];
     const photoDims = (page === "page1" || page === "page2")
-      ? await Promise.all(photosIntervention.map((p) => getImageDimensions(p.dataUrl).catch(() => null)))
+      ? await Promise.all(interventionImages.map((image) => (image ? getImageDimensions(image).catch(() => null) : Promise.resolve(null))))
       : [];
 
     const addLine = (text: string, size = 10, bold = false) => {
@@ -498,7 +591,8 @@ const InterventionForm = () => {
         addLine(`  Age: ${v.age}`, 10);
         addLine(`  Etat: ${v.etat === "grave" ? "GRAVE" : "Leger"}`, 10);
 
-        if (v.carteIdentite) {
+        const victimImage = victimIdImages[i];
+        if (victimImage) {
           try {
             addLine("  Carte d'identite:", 10, true);
             const dims = victimDims[i];
@@ -509,9 +603,9 @@ const InterventionForm = () => {
               const ratio = Math.min(maxWidth / width, maxHeight / height);
               const renderWidth = Math.max(40, width * ratio);
               const renderHeight = Math.max(28, height * ratio);
-              const imageFormat = getPdfImageFormat(v.carteIdentite);
+              const imageFormat = getPdfImageFormat(victimImage);
               if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-              doc.addImage(v.carteIdentite, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
+              doc.addImage(victimImage, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
               y += renderHeight + 4;
             }
           } catch { /* skip */ }
@@ -528,23 +622,23 @@ const InterventionForm = () => {
         addLine(observations, 10);
       }
 
-      if (photosIntervention.length > 0) {
+      if (interventionImages.some(Boolean)) {
         y += 4;
         addLine("Photos de l'intervention:", 11, true);
-        for (let pi = 0; pi < photosIntervention.length; pi++) {
-          const photo = photosIntervention[pi];
+        for (let pi = 0; pi < interventionImages.length; pi++) {
+          const photoDataUrl = interventionImages[pi];
           try {
             const dims = photoDims[pi];
-            if (!dims) continue;
+            if (!photoDataUrl || !dims) continue;
             const { width, height } = dims;
             const maxWidth = pageWidth - 30;
             const maxHeight = 100;
             const ratio = Math.min(maxWidth / width, maxHeight / height);
             const renderWidth = Math.max(40, width * ratio);
             const renderHeight = Math.max(28, height * ratio);
-            const imageFormat = getPdfImageFormat(photo.dataUrl);
+            const imageFormat = getPdfImageFormat(photoDataUrl);
             if (y + renderHeight > pageHeight - 20) { doc.addPage(); y = 20; }
-            doc.addImage(photo.dataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
+            doc.addImage(photoDataUrl, imageFormat, 15, y, renderWidth, renderHeight, undefined, imageFormat === "JPEG" ? "FAST" : undefined);
             y += renderHeight + 4;
           } catch { /* skip */ }
         }
@@ -611,6 +705,11 @@ const InterventionForm = () => {
     }
 
     addWatermark(doc);
+    return doc;
+  };
+
+  const generatePDF = async (page: "page1" | "page2" = "page1"): Promise<Blob> => {
+    const doc = await buildPdfDocument(page);
     return doc.output("blob");
   };
 
