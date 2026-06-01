@@ -1005,6 +1005,10 @@ const InterventionForm = () => {
               <Label className="text-xs text-muted-foreground">{t("form.time")} <span className="text-red-500">*</span></Label>
               <Input type="time" value={heureArrivee} onChange={(e) => setHeureArrivee(e.target.value)} />
             </div>
+            <div className="col-span-2">
+              <Label className="text-xs text-muted-foreground">{t("form.counter")} <span className="text-red-500">*</span></Label>
+              <Input type="number" placeholder={t("form.counterPlaceholder")} value={compteur} onChange={(e) => setCompteur(e.target.value)} />
+            </div>
           </div>
         </div>
 
