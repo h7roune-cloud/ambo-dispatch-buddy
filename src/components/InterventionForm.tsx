@@ -1261,15 +1261,6 @@ const InterventionForm = () => {
 
       {/* ============ PAGE 2 — Transport hôpital ============ */}
       <TabsContent value="page2" className="space-y-4 mt-0 scroll-mt-24">
-        {/* Compteur départ */}
-        <div className="field-group space-y-3">
-          <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-            <MapPin className="w-4 h-4" />
-            {t("form.counter")} <span className="text-red-500">*</span>
-          </div>
-          <Input type="number" placeholder={t("form.counterPlaceholder")} value={compteur} onChange={(e) => setCompteur(e.target.value)} />
-        </div>
-
         {/* Hôpital de destination */}
         <div className="field-group space-y-3">
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
